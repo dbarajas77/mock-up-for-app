@@ -1,0 +1,67 @@
+-- Enable UUID extension if not already enabled
+CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
+
+-- Projects table
+CREATE TABLE public.projects (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  name VARCHAR(255) NOT NULL,
+  description TEXT,
+  status VARCHAR(50) NOT NULL DEFAULT 'active',
+  priority VARCHAR(20) DEFAULT 'medium',
+  start_date DATE,
+  end_date DATE,
+  created_by UUID REFERENCES public.profiles(id),
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+  updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+-- Project members join table (minimal version)
+CREATE TABLE public.project_members (
+  project_id UUID REFERENCES public.projects(id) ON DELETE CASCADE,
+  user_id UUID REFERENCES public.profiles(id) ON DELETE CASCADE,
+  role VARCHAR(50) NOT NULL DEFAULT 'member',
+  joined_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+  PRIMARY KEY (project_id, user_id)
+);
+
+-- Enable RLS on all tables
+ALTER TABLE public.projects ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.project_members ENABLE ROW LEVEL SECURITY;
+
+-- Admin policies (full access)
+CREATE POLICY "Admin full access on projects" 
+ON public.projects FOR ALL TO authenticated 
+USING (auth.jwt() ->> 'role' = 'admin');
+
+CREATE POLICY "Admin full access on project_members" 
+ON public.project_members FOR ALL TO authenticated 
+USING (auth.jwt() ->> 'role' = 'admin');
+
+-- Project owner policies
+CREATE POLICY "Project owners can manage their projects" 
+ON public.projects FOR ALL TO authenticated 
+USING (created_by = auth.uid());
+
+-- Project member policies
+CREATE POLICY "Project members can view projects" 
+ON public.projects FOR SELECT TO authenticated 
+USING (
+  EXISTS (
+    SELECT 1 FROM public.project_members 
+    WHERE project_id = projects.id AND user_id = auth.uid()
+  )
+);
+
+CREATE POLICY "Project members can view project members" 
+ON public.project_members FOR SELECT TO authenticated 
+USING (
+  EXISTS (
+    SELECT 1 FROM public.project_members 
+    WHERE project_id = project_members.project_id AND user_id = auth.uid()
+  )
+);
+
+-- Create indexes for performance
+CREATE INDEX idx_projects_created_by ON public.projects(created_by);
+CREATE INDEX idx_project_members_user_id ON public.project_members(user_id);
+CREATE INDEX idx_project_members_project_id ON public.project_members(project_id);

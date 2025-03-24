@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Side Panel Test</title>
+  <style>
+    body {
+      margin: 0;
+      padding: 0;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    }
+    
+    .container {
+      display: flex;
+      height: 100vh;
+    }
+    
+    .header {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 60px;
+      background-color: #003366;
+      color: white;
+      display: flex;
+      align-items: center;
+      padding: 0 20px;
+      z-index: 1000;
+    }
+    
+    .side-panel {
+      position: fixed;
+      top: 60px;
+      left: 0;
+      width: 220px;
+      height: calc(100vh - 60px);
+      background-color: white;
+      border-right: 1px solid #e0e0e0;
+      box-shadow: 2px 0 4px rgba(0, 0, 0, 0.1);
+      z-index: 999;
+      overflow-y: auto;
+    }
+    
+    .side-panel-header {
+      padding: 20px;
+      border-bottom: 1px solid #e0e0e0;
+    }
+    
+    .side-panel-title {
+      margin: 0;
+      font-size: 18px;
+      font-weight: bold;
+    }
+    
+    .side-panel-menu {
+      list-style: none;
+      padding: 0;
+      margin: 0;
+    }
+    
+    .side-panel-menu li {
+      padding: 15px 20px;
+      border-bottom: 1px solid #f0f0f0;
+      cursor: pointer;
+    }
+    
+    .side-panel-menu li:hover {
+      background-color: #f5f5f5;
+    }
+    
+    .side-panel-menu li.active {
+      background-color: #e6f7ff;
+      border-left: 3px solid #1890ff;
+    }
+    
+    .content {
+      margin-left: 220px;
+      margin-top: 60px;
+      padding: 20px;
+      flex: 1;
+      background-color: #f5f5f5;
+    }
+    
+    @media (max-width: 1024px) {
+      .content {
+        margin-left: 0;
+      }
+      
+      .side-panel {
+        transform: translateX(-100%);
+        transition: transform 0.3s ease;
+      }
+      
+      .side-panel.open {
+        transform: translateX(0);
+      }
+      
+      .toggle-button {
+        display: block;
+      }
+    }
+    
+    .toggle-button {
+      background: none;
+      border: none;
+      color: white;
+      font-size: 24px;
+      cursor: pointer;
+      margin-right: 15px;
+      display: none;
+    }
+    
+    .card {
+      background-color: white;
+      border-radius: 4px;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+      padding: 20px;
+      margin-bottom: 20px;
+    }
+    
+    .card h2 {
+      margin-top: 0;
+    }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <button class="toggle-button" id="toggleButton">☰</button>
+    <h1>Project Manager</h1>
+  </div>
+  
+  <div class="side-panel" id="sidePanel">
+    <div class="side-panel-header">
+      <h2 class="side-panel-title">Navigation</h2>
+    </div>
+    <ul class="side-panel-menu">
+      <li class="active">Projects</li>
+      <li>Tasks</li>
+      <li>Calendar</li>
+      <li>Reports</li>
+      <li>Team</li>
+      <li>Settings</li>
+    </ul>
+  </div>
+  
+  <div class="content">
+    <div class="card">
+      <h2>Projects</h2>
+      <p>This is a test page to verify the side panel styling.</p>
+    </div>
+    
+    <div class="card">
+      <h2>Active Projects</h2>
+      <p>Project 1</p>
+      <p>Project 2</p>
+      <p>Project 3</p>
+    </div>
+  </div>
+  
+  <script>
+    const toggleButton = document.getElementById('toggleButton');
+    const sidePanel = document.getElementById('sidePanel');
+    
+    toggleButton.addEventListener('click', () => {
+      sidePanel.classList.toggle('open');
+    });
+    
+    // Check screen size on load
+    function checkScreenSize() {
+      if (window.innerWidth < 1024) {
+        toggleButton.style.display = 'block';
+      } else {
+        toggleButton.style.display = 'none';
+        sidePanel.classList.add('open');
+      }
+    }
+    
+    // Initial check
+    checkScreenSize();
+    
+    // Listen for resize events
+    window.addEventListener('resize', checkScreenSize);
+  </script>
+</body>
+</html>

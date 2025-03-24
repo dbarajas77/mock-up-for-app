@@ -1,0 +1,24 @@
+{
+  "name": "project-manager-parent",
+  "version": "1.0.0",
+  "description": "Parent directory for project-manager",
+  "scripts": {
+    "mcp": "cd project-manager && npm run mcp",
+    "web": "cd project-manager && npm run web",
+    "start": "cd project-manager && npm start"
+  },
+  "private": true,
+  "dependencies": {
+    "@react-native-async-storage/async-storage": "^2.1.2",
+    "@react-native-community/datetimepicker": "^8.3.0",
+    "@supabase/supabase-js": "^2.49.1",
+    "@types/react-pdf": "^6.2.0",
+    "date-fns": "^4.1.0",
+    "pdfjs-dist": "^5.0.375",
+    "react-native-dotenv": "^3.4.11",
+    "react-native-toast-message": "^2.2.1",
+    "react-native-url-polyfill": "^2.0.0",
+    "react-native-webview": "^13.13.4",
+    "react-pdf": "^9.2.1"
+  }
+}

@@ -1,0 +1,78 @@
+-- Enable UUID extension
+CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
+
+-- Base Tables
+CREATE TABLE public.profiles (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  email VARCHAR(255) UNIQUE NOT NULL,
+  full_name VARCHAR(255),
+  avatar_url TEXT,
+  phone VARCHAR(50),
+  role VARCHAR(50) NOT NULL DEFAULT 'member',
+  status VARCHAR(50) NOT NULL DEFAULT 'active',
+  last_active TIMESTAMP WITH TIME ZONE,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+  updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+CREATE TABLE public.user_settings (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  user_id UUID REFERENCES public.profiles(id) ON DELETE CASCADE,
+  theme VARCHAR(20) DEFAULT 'light',
+  notification_preferences JSONB DEFAULT '{}',
+  UNIQUE(user_id)
+);
+
+CREATE TABLE public.groups (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  name VARCHAR(255) NOT NULL,
+  description TEXT
+);
+
+CREATE TABLE public.user_groups (
+  user_id UUID REFERENCES public.profiles(id) ON DELETE CASCADE,
+  group_id UUID REFERENCES public.groups(id) ON DELETE CASCADE,
+  PRIMARY KEY (user_id, group_id)
+);
+
+-- Storage bucket
+INSERT INTO storage.buckets (id, name, public) 
+VALUES ('user-avatars', 'user-avatars', true);
+
+-- Simple RLS Policies
+ALTER TABLE public.profiles ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.user_settings ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.groups ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.user_groups ENABLE ROW LEVEL SECURITY;
+
+-- Admin full access policy for all tables
+CREATE POLICY "Admin full access" ON public.profiles FOR ALL TO authenticated 
+USING (auth.jwt() ->> 'role' = 'admin');
+
+CREATE POLICY "Admin full access" ON public.user_settings FOR ALL TO authenticated 
+USING (auth.jwt() ->> 'role' = 'admin');
+
+CREATE POLICY "Admin full access" ON public.groups FOR ALL TO authenticated 
+USING (auth.jwt() ->> 'role' = 'admin');
+
+CREATE POLICY "Admin full access" ON public.user_groups FOR ALL TO authenticated 
+USING (auth.jwt() ->> 'role' = 'admin');
+
+-- Users read-only policy for all tables
+CREATE POLICY "Users read only" ON public.profiles FOR SELECT TO authenticated USING (true);
+CREATE POLICY "Users read only" ON public.user_settings FOR SELECT TO authenticated USING (true);
+CREATE POLICY "Users read only" ON public.groups FOR SELECT TO authenticated USING (true);
+CREATE POLICY "Users read only" ON public.user_groups FOR SELECT TO authenticated USING (true);
+
+-- Storage policies
+CREATE POLICY "Admin full access" ON storage.objects FOR ALL TO authenticated 
+USING (bucket_id = 'user-avatars' AND auth.jwt() ->> 'role' = 'admin');
+
+CREATE POLICY "Users read only" ON storage.objects FOR SELECT TO authenticated 
+USING (bucket_id = 'user-avatars');
+
+-- Indexes
+CREATE INDEX idx_profiles_email ON public.profiles(email);
+CREATE INDEX idx_profiles_role ON public.profiles(role);
+CREATE INDEX idx_user_settings_user_id ON public.user_settings(user_id);
+CREATE INDEX idx_user_groups_user_id ON public.user_groups(user_id);

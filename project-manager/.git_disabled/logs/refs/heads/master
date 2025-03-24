@@ -1,0 +1,4 @@
+0000000000000000000000000000000000000000 b70cf5e40402d828fd99f3e4a66b7c61ab9bb7f2 dbarajas77 <dmdesignservices@gmail.com> 1742148338 -0400	commit (initial): Initial commit
+b70cf5e40402d828fd99f3e4a66b7c61ab9bb7f2 820ad15c6bf401fe0a361ff7bac24dfa5f85a0c6 dbarajas77 <dmdesignservices@gmail.com> 1742249509 -0400	commit: Initial commit with project files
+820ad15c6bf401fe0a361ff7bac24dfa5f85a0c6 d16268b7eab2b1d75094cbe46d07b2690902e4be dbarajas77 <dmdesignservices@gmail.com> 1742262210 -0400	commit: Update navigation and UI: Add Settings screen with collapsible sections and improve Resource Management
+d16268b7eab2b1d75094cbe46d07b2690902e4be 130db70fe7244d7f0cb6e6536ba5a5aecef37378 dbarajas77 <dmdesignservices@gmail.com> 1742262354 -0400	commit: Fix duplicate Settings entry in sidebar by replacing bottom Settings button with Help & Support
