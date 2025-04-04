@@ -11,7 +11,7 @@ type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
 
 const ProjectHeader = () => {
   const navigation = useNavigation<NavigationProp>();
-  const { project } = useProject();
+  const { project, isLoading } = useProject();
 
   const handleBackPress = () => {
     navigation.goBack();
@@ -38,7 +38,7 @@ const ProjectHeader = () => {
 
         <View style={styles.titleContainer}>
           <Text style={styles.title} numberOfLines={1}>
-            {project?.name || 'Project Details'}
+            {isLoading ? 'Loading...' : project?.name || 'Project Details'}
           </Text>
         </View>
       </View>
@@ -108,4 +108,4 @@ const styles = StyleSheet.create({
   },
 });
 
-export default ProjectHeader; 
+export default ProjectHeader;
