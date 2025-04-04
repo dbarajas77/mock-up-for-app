@@ -1,332 +1,223 @@
 import React, { useEffect, useState } from 'react';
-import { StyleSheet, Platform } from 'react-native';
+import { StyleSheet, View, Text, ScrollView, TouchableOpacity, ActivityIndicator } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
-import { useDispatch } from 'react-redux';
-import { useSelector } from 'react-redux';
-import { getProjects } from '../../redux/actions/projects';
-import { getUsers } from '../../redux/actions/users';
-import { getTasks } from '../../redux/actions/tasks';
-import { getComments } from '../../redux/actions/comments';
-import { getFiles } from '../../redux/actions/files';
-import { getProjectDetails } from '../../redux/actions/projectDetails';
-import { getUserDetails } from '../../redux/actions/userDetails';
-import { getTaskDetails } from '../../redux/actions/taskDetails';
-import { getCommentDetails } from '../../redux/actions/commentDetails';
-import { getFileDetails } from '../../redux/actions/fileDetails';
-import { getProjectDetailsById } from '../../redux/actions/projectDetailsById';
-import { getUserDetailsById } from '../../redux/actions/userDetailsById';
-import { getTaskDetailsById } from '../../redux/actions/taskDetailsById';
-import { getCommentDetailsById } from '../../redux/actions/commentDetailsById';
-import { getFileDetailsById } from '../../redux/actions/fileDetailsById';
-import { getProjectDetailsByUserId } from '../../redux/actions/projectDetailsByUserId';
-import { getUserDetailsByUserId } from '../../redux/actions/userDetailsByUserId';
-import { getTaskDetailsByUserId } from '../../redux/actions/taskDetailsByUserId';
-import { getCommentDetailsByUserId } from '../../redux/actions/commentDetailsByUserId';
-import { getFileDetailsByUserId } from '../../redux/actions/fileDetailsByUserId';
-import { getProjectDetailsByProjectId } from '../../redux/actions/projectDetailsByProjectId';
-import { getUserDetailsByProjectId } from '../../redux/actions/userDetailsByProjectId';
-import { getTaskDetailsByProjectId } from '../../redux/actions/taskDetailsByProjectId';
-import { getCommentDetailsByProjectId } from '../../redux/actions/commentDetailsByProjectId';
-import { getFileDetailsByProjectId } from '../../redux/actions/fileDetailsByProjectId';
-import { getProjectDetailsByTaskId } from '../../redux/actions/projectDetailsByTaskId';
-import { getUserDetailsByTaskId } from '../../redux/actions/userDetailsByTaskId';
-import { getTaskDetailsByTaskId } from '../../redux/actions/taskDetailsByTaskId';
-import { getCommentDetailsByTaskId } from '../../redux/actions/commentDetailsByTaskId';
-import { getFileDetailsByTaskId } from '../../redux/actions/fileDetailsByTaskId';
-import { getProjectDetailsByCommentId } from '../../redux/actions/projectDetailsByCommentId';
-import { getUserDetailsByCommentId } from '../../redux/actions/userDetailsByCommentId';
-import { getTaskDetailsByCommentId } from '../../redux/actions/taskDetailsByCommentId';
-import { getCommentDetailsByCommentId } from '../../redux/actions/commentDetailsByCommentId';
-import { getFileDetailsByCommentId } from '../../redux/actions/fileDetailsByCommentId';
-import { getProjectDetailsByFileId } from '../../redux/actions/projectDetailsByFileId';
-import { getUserDetailsByFileId } from '../../redux/actions/userDetailsByFileId';
-import { getTaskDetailsByFileId } from '../../redux/actions/taskDetailsByFileId';
-import { getCommentDetailsByFileId } from '../../redux/actions/commentDetailsByFileId';
-import { getFileDetailsByFileId } from '../../redux/actions/fileDetailsByFileId';
-import { getProjectDetailsByUserIdAndProjectId } from '../../redux/actions/projectDetailsByUserIdAndProjectId';
-import { getUserDetailsByUserIdAndProjectId } from '../../redux/actions/userDetailsByUserIdAndProjectId';
-import { getTaskDetailsByUserIdAndProjectId } from '../../redux/actions/taskDetailsByUserIdAndProjectId';
-import { getCommentDetailsByUserIdAndProjectId } from '../../redux/actions/commentDetailsByUserIdAndProjectId';
-import { getFileDetailsByUserIdAndProjectId } from '../../redux/actions/fileDetailsByUserIdAndProjectId';
-import { getProjectDetailsByUserIdAndTaskId } from '../../redux/actions/projectDetailsByUserIdAndTaskId';
-import { getUserDetailsByUserIdAndTaskId } from '../../redux/actions/userDetailsByUserIdAndTaskId';
-import { getTaskDetailsByUserIdAndTaskId } from '../../redux/actions/taskDetailsByUserIdAndTaskId';
-import { getCommentDetailsByUserIdAndTaskId } from '../../redux/actions/commentDetailsByUserIdAndTaskId';
-import { getFileDetailsByUserIdAndTaskId } from '../../redux/actions/fileDetailsByUserIdAndTaskId';
-import { getProjectDetailsByUserIdAndCommentId } from '../../redux/actions/projectDetailsByUserIdAndCommentId';
-import { getUserDetailsByUserIdAndCommentId } from '../../redux/actions/userDetailsByUserIdAndCommentId';
-import { getTaskDetailsByUserIdAndCommentId } from '../../redux/actions/taskDetailsByUserIdAndCommentId';
-import { getCommentDetailsByUserIdAndCommentId } from '../../redux/actions/commentDetailsByUserIdAndCommentId';
-import { getFileDetailsByUserIdAndCommentId } from '../../redux/actions/fileDetailsByUserIdAndCommentId';
-import { getProjectDetailsByUserIdAndFileId } from '../../redux/actions/projectDetailsByUserIdAndFileId';
-import { getUserDetailsByUserIdAndFileId } from '../../redux/actions/userDetailsByUserIdAndFileId';
-import { getTaskDetailsByUserIdAndFileId } from '../../redux/actions/taskDetailsByUserIdAndFileId';
-import { getCommentDetailsByUserIdAndFileId } from '../../redux/actions/commentDetailsByUserIdAndFileId';
-import { getFileDetailsByUserIdAndFileId } from '../../redux/actions/fileDetailsByUserIdAndFileId';
-import { getProjectDetailsByProjectIdAndTaskId } from '../../redux/actions/projectDetailsByProjectIdAndTaskId';
-import { getUserDetailsByProjectIdAndTaskId } from '../../redux/actions/userDetailsByProjectIdAndTaskId';
-import { getTaskDetailsByProjectIdAndTaskId } from '../../redux/actions/taskDetailsByProjectIdAndTaskId';
-import { getCommentDetailsByProjectIdAndTaskId } from '../../redux/actions/commentDetailsByProjectIdAndTaskId';
-import { getFileDetailsByProjectIdAndTaskId } from '../../redux/actions/fileDetailsByProjectIdAndTaskId';
-import { getProjectDetailsByProjectIdAndCommentId } from '../../redux/actions/projectDetailsByProjectIdAndCommentId';
-import { getUserDetailsByProjectIdAndCommentId } from '../../redux/actions/userDetailsByProjectIdAndCommentId';
-import { getTaskDetailsByProjectIdAndCommentId } from '../../redux/actions/taskDetailsByProjectIdAndCommentId';
-import { getCommentDetailsByProjectIdAndCommentId } from '../../redux/actions/commentDetailsByProjectIdAndCommentId';
-import { getFileDetailsByProjectIdAndCommentId } from '../../redux/actions/fileDetailsByProjectIdAndCommentId';
-import { getProjectDetailsByProjectIdAndFileId } from '../../redux/actions/projectDetailsByProjectIdAndFileId';
-import { getUserDetailsByProjectIdAndFileId } from '../../redux/actions/userDetailsByProjectIdAndFileId';
-import { getTaskDetailsByProjectIdAndFileId } from '../../redux/actions/taskDetailsByProjectIdAndFileId';
-import { getCommentDetailsByProjectIdAndFileId } from '../../redux/actions/commentDetailsByProjectIdAndFileId';
-import { getFileDetailsByProjectIdAndFileId } from '../../redux/actions/fileDetailsByProjectIdAndFileId';
-import { getProjectDetailsByTaskIdAndCommentId } from '../../redux/actions/projectDetailsByTaskIdAndCommentId';
-import { getUserDetailsByTaskIdAndCommentId } from '../../redux/actions/userDetailsByTaskIdAndCommentId';
-import { getTaskDetailsByTaskIdAndCommentId } from '../../redux/actions/taskDetailsByTaskIdAndCommentId';
-import { getCommentDetailsByTaskIdAndCommentId } from '../../redux/actions/commentDetailsByTaskIdAndCommentId';
-import { getFileDetailsByTaskIdAndCommentId } from '../../redux/actions/fileDetailsByTaskIdAndCommentId';
-import { getProjectDetailsByTaskIdAndFileId } from '../../redux/actions/projectDetailsByTaskIdAndFileId';
-import { getUserDetailsByTaskIdAndFileId } from '../../redux/actions/userDetailsByTaskIdAndFileId';
-import { getTaskDetailsByTaskIdAndFileId } from '../../redux/actions/taskDetailsByTaskIdAndFileId';
-import { getCommentDetailsByTaskIdAndFileId } from '../../redux/actions/commentDetailsByTaskIdAndFileId';
-import { getFileDetailsByTaskIdAndFileId } from '../../redux/actions/fileDetailsByTaskIdAndFileId';
-import { getProjectDetailsByCommentIdAndFileId } from '../../redux/actions/projectDetailsByCommentIdAndFileId';
-import { getUserDetailsByCommentIdAndFileId } from '../../redux/actions/userDetailsByCommentIdAndFileId';
-import { getTaskDetailsByCommentIdAndFileId } from '../../redux/actions/taskDetailsByCommentIdAndFileId';
-import { getCommentDetailsByCommentIdAndFileId } from '../../redux/actions/commentDetailsByCommentIdAndFileId';
-import { getFileDetailsByCommentIdAndFileId } from '../../redux/actions/fileDetailsByCommentIdAndFileId';
-import { getProjectDetailsByUserIdAndTaskIdAndProjectId } from '../../redux/actions/projectDetailsByUserIdAndTaskIdAndProjectId';
-import { getUserDetailsByUserIdAndTaskIdAndProjectId } from '../../redux/actions/userDetailsByUserIdAndTaskIdAndProjectId';
-import { getTaskDetailsByUserIdAndTaskIdAndProjectId } from '../../redux/actions/taskDetailsByUserIdAndTaskIdAndProjectId';
-import { getCommentDetailsByUserIdAndTaskIdAndProjectId } from '../../redux/actions/commentDetailsByUserIdAndTaskIdAndProjectId';
-import { getFileDetailsByUserIdAndTaskIdAndProjectId } from '../../redux/actions/fileDetailsByUserIdAndTaskIdAndProjectId';
-import { getProjectDetailsByUserIdAndTaskIdAndTaskId } from '../../redux/actions/projectDetailsByUserIdAndTaskIdAndTaskId';
-import { getUserDetailsByUserIdAndTaskIdAndTaskId } from '../../redux/actions/userDetailsByUserIdAndTaskIdAndTaskId';
-import { getTaskDetailsByUserIdAndTaskIdAndTaskId } from '../../redux/actions/taskDetailsByUserIdAndTaskIdAndTaskId';
-import { getCommentDetailsByUserIdAndTaskIdAndTaskId } from '../../redux/actions/commentDetailsByUserIdAndTaskIdAndTaskId';
-import { getFileDetailsByUserIdAndTaskIdAndTaskId } from '../../redux/actions/fileDetailsByUserIdAndTaskIdAndTaskId';
-import { getProjectDetailsByUserIdAndTaskIdAndCommentId } from '../../redux/actions/projectDetailsByUserIdAndTaskIdAndCommentId';
-import { getUserDetailsByUserIdAndTaskIdAndCommentId } from '../../redux/actions/userDetailsByUserIdAndTaskIdAndCommentId';
-import { getTaskDetailsByUserIdAndTaskIdAndCommentId } from '../../redux/actions/taskDetailsByUserIdAndTaskIdAndCommentId';
-import { getCommentDetailsByUserIdAndTaskIdAndCommentId } from '../../redux/actions/commentDetailsByUserIdAndTaskIdAndCommentId';
-import { getFileDetailsByUserIdAndTaskIdAndCommentId } from '../../redux/actions/fileDetailsByUserIdAndTaskIdAndCommentId';
-import { getProjectDetailsByUserIdAndTaskIdAndFileId } from '../../redux/actions/projectDetailsByUserIdAndTaskIdAndFileId';
-import { getUserDetailsByUserIdAndTaskIdAndFileId } from '../../redux/actions/userDetailsByUserIdAndTaskIdAndFileId';
-import { getTaskDetailsByUserIdAndTaskIdAndFileId } from '../../redux/actions/taskDetailsByUserIdAndTaskIdAndFileId';
-import { getCommentDetailsByUserIdAndTaskIdAndFileId } from '../../redux/actions/commentDetailsByUserIdAndTaskIdAndFileId';
-import { getFileDetailsByUserIdAndTaskIdAndFileId } from '../../redux/actions/fileDetailsByUserIdAndTaskIdAndFileId';
-import { getProjectDetailsByUserIdAndCommentIdAndFileId } from '../../redux/actions/projectDetailsByUserIdAndCommentIdAndFileId';
-import { getUserDetailsByUserIdAndCommentIdAndFileId } from '../../redux/actions/userDetailsByUserIdAndCommentIdAndFileId';
-import { getTaskDetailsByUserIdAndCommentIdAndFileId } from '../../redux/actions/taskDetailsByUserIdAndCommentIdAndFileId';
-import { getCommentDetailsByUserIdAndCommentIdAndFileId } from '../../redux/actions/commentDetailsByUserIdAndCommentIdAndFileId';
-import { getFileDetailsByUserIdAndCommentIdAndFileId } from '../../redux/actions/fileDetailsByUserIdAndCommentIdAndFileId';
-import { getProjectDetailsByUserIdAndCommentIdAndProjectId } from '../../redux/actions/projectDetailsByUserIdAndCommentIdAndProjectId';
-import { getUserDetailsByUserIdAndCommentIdAndProjectId } from '../../redux/actions/userDetailsByUserIdAndCommentIdAndProjectId';
-import { getTaskDetailsByUserIdAndCommentIdAndProjectId } from '../../redux/actions/taskDetailsByUserIdAndCommentIdAndProjectId';
-import { getCommentDetailsByUserIdAndCommentIdAndProjectId } from '../../redux/actions/commentDetailsByUserIdAndCommentIdAndProjectId';
-import { getFileDetailsByUserIdAndCommentIdAndProjectId } from '../../redux/actions/fileDetailsByUserIdAndCommentIdAndProjectId';
-import { getProjectDetailsByUserIdAndCommentIdAndTaskId } from '../../redux/actions/projectDetailsByUserIdAndCommentIdAndTaskId';
-import { getUserDetailsByUserIdAndCommentIdAndTaskId } from '../../redux/actions/userDetailsByUserIdAndCommentIdAndTaskId';
-import { getTaskDetailsByUserIdAndCommentIdAndTaskId } from '../../redux/actions/taskDetailsByUserIdAndCommentIdAndTaskId';
-import { getCommentDetailsByUserIdAndCommentIdAndTaskId } from '../../redux/actions/commentDetailsByUserIdAndCommentIdAndTaskId';
-import { getFileDetailsByUserIdAndCommentIdAndTaskId } from '../../redux/actions/fileDetailsByUserIdAndCommentIdAndTaskId';
-import { getProjectDetailsByUserIdAndCommentIdAndFileId } from '../../redux/actions/projectDetailsByUserIdAndCommentIdAndFileId';
-import { getUserDetailsByUserIdAndCommentIdAndFileId } from '../../redux/actions/userDetailsByUserIdAndCommentIdAndFileId';
-import { getTaskDetailsByUserIdAndCommentIdAndFileId } from '../../redux/actions/taskDetailsByUserIdAndCommentIdAndFileId';
-import { getCommentDetailsByUserIdAndCommentIdAndFileId } from '../../redux/actions/commentDetailsByUserIdAndCommentIdAndFileId';
-import { getFileDetailsByUserIdAndCommentIdAndFileId } from '../../redux/actions/fileDetailsByUserIdAndCommentIdAndFileId';
-import { getProjectDetailsByUserIdAndFileIdAndProjectId } from '../../redux/actions/projectDetailsByUserIdAndFileIdAndProjectId';
-import { getUserDetailsByUserIdAndFileIdAndProjectId } from '../../redux/actions/userDetailsByUserIdAndFileIdAndProjectId';
-import { getTaskDetailsByUserIdAndFileIdAndProjectId } from '../../redux/actions/taskDetailsByUserIdAndFileIdAndProjectId';
-import { getCommentDetailsByUserIdAndFileIdAndProjectId } from '../../redux/actions/commentDetailsByUserIdAndFileIdAndProjectId';
-import { getFileDetailsByUserIdAndFileIdAndProjectId } from '../../redux/actions/fileDetailsByUserIdAndFileIdAndProjectId';
-import { getProjectDetailsByUserIdAndFileIdAndTaskId } from '../../redux/actions/projectDetailsByUserIdAndFileIdAndTaskId';
-import { getUserDetailsByUserIdAndFileIdAndTaskId } from '../../redux/actions/userDetailsByUserIdAndFileIdAndTaskId';
-import { getTaskDetailsByUserIdAndFileIdAndTaskId } from '../../redux/actions/taskDetailsByUserIdAndFileIdAndTaskId';
-import { getCommentDetailsByUserIdAndFileIdAndTaskId } from '../../redux/actions/commentDetailsByUserIdAndFileIdAndTaskId';
-import { getFileDetailsByUserIdAndFileIdAndTaskId } from '../../redux/actions/fileDetailsByUserIdAndFileIdAndTaskId';
-import { getProjectDetailsByUserIdAndFileIdAndCommentId } from '../../redux/actions/projectDetailsByUserIdAndFileIdAndCommentId';
-import { getUserDetailsByUserIdAndFileIdAndCommentId } from '../../redux/actions/userDetailsByUserIdAndFileIdAndCommentId';
-import { getTaskDetailsByUserIdAndFileIdAndCommentId } from '../../redux/actions/taskDetailsByUserIdAndFileIdAndCommentId';
-import { getCommentDetailsByUserIdAndFileIdAndCommentId } from '../../redux/actions/commentDetailsByUserIdAndFileIdAndCommentId';
-import { getFileDetailsByUserIdAndFileIdAndCommentId } from '../../redux/actions/fileDetailsByUserIdAndFileIdAndCommentId';
-import { getProjectDetailsByUserIdAndFileIdAndFileId } from '../../redux/actions/projectDetailsByUserIdAndFileIdAndFileId';
-import { getUserDetailsByUserIdAndFileIdAndFileId } from '../../redux/actions/userDetailsByUserIdAndFileIdAndFileId';
-import { getTaskDetailsByUserIdAndFileIdAndFileId } from '../../redux/actions/taskDetailsByUserIdAndFileIdAndFileId';
-import { getCommentDetailsByUserIdAndFileIdAndFileId } from '../../redux/actions/commentDetailsByUserIdAndFileIdAndFileId';
-import { getFileDetailsByUserIdAndFileIdAndFileId } from '../../redux/actions/fileDetailsByUserIdAndFileIdAndFileId';
-import { getProjectDetailsByProjectIdAndProjectId } from '../../redux/actions/projectDetailsByProjectIdAndProjectId';
-import { getUserDetailsByProjectIdAndProjectId } from '../../redux/actions/userDetailsByProjectIdAndProjectId';
-import { getTaskDetailsByProjectIdAndProjectId } from '../../redux/actions/taskDetailsByProjectIdAndProjectId';
-import { getCommentDetailsByProjectIdAndProjectId } from '../../redux/actions/commentDetailsByProjectIdAndProjectId';
-import { getFileDetailsByProjectIdAndProjectId } from '../../redux/actions/fileDetailsByProjectIdAndProjectId';
-import { getProjectDetailsByProjectIdAndTaskId } from '../../redux/actions/projectDetailsByProjectIdAndTaskId';
-import { getUserDetailsByProjectIdAndTaskId } from '../../redux/actions/userDetailsByProjectIdAndTaskId';
-import { getTaskDetailsByProjectIdAndTaskId } from '../../redux/actions/taskDetailsByProjectIdAndTaskId';
-import { getCommentDetailsByProjectIdAndTaskId } from '../../redux/actions/commentDetailsByProjectIdAndTaskId';
-import { getFileDetailsByProjectIdAndTaskId } from '../../redux/actions/fileDetailsByProjectIdAndTaskId';
-import { getProjectDetailsByProjectIdAndCommentId } from '../../redux/actions/projectDetailsByProjectIdAndCommentId';
-import { getUserDetailsByProjectIdAndCommentId } from '../../redux/actions/userDetailsByProjectIdAndCommentId';
-import { getTaskDetailsByProjectIdAndCommentId } from '../../redux/actions/taskDetailsByProjectIdAndCommentId';
-import { getCommentDetailsByProjectIdAndCommentId } from '../../redux/actions/commentDetailsByProjectIdAndCommentId';
-import { getFileDetailsByProjectIdAndCommentId } from '../../redux/actions/fileDetailsByProjectIdAndCommentId';
-import { getProjectDetailsByProjectIdAndFileId } from '../../redux/actions/projectDetailsByProjectIdAndFileId';
-import { getUserDetailsByProjectIdAndFileId } from '../../redux/actions/userDetailsByProjectIdAndFileId';
-import { getTaskDetailsByProjectIdAndFileId } from '../../redux/actions/taskDetailsByProjectIdAndFileId';
-import { getCommentDetailsByProjectIdAndFileId } from '../../redux/actions/commentDetailsByProjectIdAndFileId';
-import { getFileDetailsByProjectIdAndFileId } from '../../redux/actions/fileDetailsByProjectIdAndFileId';
-import { getProjectDetailsByTaskIdAndProjectId } from '../../redux/actions/projectDetailsByTaskIdAndProjectId';
-import { getUserDetailsByTaskIdAndProjectId } from '../../redux/actions/userDetailsByTaskIdAndProjectId';
-import { getTaskDetailsByTaskIdAndProjectId } from '../../redux/actions/taskDetailsByTaskIdAndProjectId';
-import { getCommentDetailsByTaskIdAndProjectId } from '../../redux/actions/commentDetailsByTaskIdAndProjectId';
-import { getFileDetailsByTaskIdAndProjectId } from '../../redux/actions/fileDetailsByTaskIdAndProjectId';
-import { getProjectDetailsByTaskIdAndCommentId } from '../../redux/actions/projectDetailsByTaskIdAndCommentId';
-import { getUserDetailsByTaskIdAndCommentId } from '../../redux/actions/userDetailsByTaskIdAndCommentId';
-import { getTaskDetailsByTaskIdAndCommentId } from '../../redux/actions/taskDetailsByTaskIdAndCommentId';
-import { getCommentDetailsByTaskIdAndCommentId } from '../../redux/actions/commentDetailsByTaskIdAndCommentId';
-import { getFileDetailsByTaskIdAndCommentId } from '../../redux/actions/fileDetailsByTaskIdAndCommentId';
-import { getProjectDetailsByTaskIdAndFileId } from '../../redux/actions/projectDetailsByTaskIdAndFileId';
-import { getUserDetailsByTaskIdAndFileId } from '../../redux/actions/userDetailsByTaskIdAndFileId';
-import { getTaskDetailsByTaskIdAndFileId } from '../../redux/actions/taskDetailsByTaskIdAndFileId';
-import { getCommentDetailsByTaskIdAndFileId } from '../../redux/actions/commentDetailsByTaskIdAndFileId';
-import { getFileDetailsByTaskIdAndFileId } from '../../redux/actions/fileDetailsByTaskIdAndFileId';
-import { getProjectDetailsByCommentIdAndProjectId } from '../../redux/actions/projectDetailsByCommentIdAndProjectId';
-import { getUserDetailsByCommentIdAndProjectId } from '../../redux/actions/userDetailsByCommentIdAndProjectId';
-import { getTaskDetailsByCommentIdAndProjectId } from '../../redux/actions/taskDetailsByCommentIdAndProjectId';
-import { getCommentDetailsByCommentIdAndProjectId } from '../../redux/actions/commentDetailsByCommentIdAndProjectId';
-import { getFileDetailsByCommentIdAndProjectId } from '../../redux/actions/fileDetailsByCommentIdAndProjectId';
-import { getProjectDetailsByCommentIdAndTaskId } from '../../redux/actions/projectDetailsByCommentIdAndTaskId';
-import { getUserDetailsByCommentIdAndTaskId } from '../../redux/actions/userDetailsByCommentIdAndTaskId';
-import { getTaskDetailsByCommentIdAndTaskId } from '../../redux/actions/taskDetailsByCommentIdAndTaskId';
-import { getCommentDetailsByCommentIdAndTaskId } from '../../redux/actions/commentDetailsByCommentIdAndTaskId';
-import { getFileDetailsByCommentIdAndTaskId } from '../../redux/actions/fileDetailsByCommentIdAndTaskId';
-import { getProjectDetailsByCommentIdAndFileId } from '../../redux/actions/projectDetailsByCommentIdAndFileId';
-import { getUserDetailsByCommentIdAndFileId } from '../../redux/actions/userDetailsByCommentIdAndFileId';
-import { getTaskDetailsByCommentIdAndFileId } from '../../redux/actions/taskDetailsByCommentIdAndFileId';
-import { getCommentDetailsByCommentIdAndFileId } from '../../redux/actions/commentDetailsByCommentIdAndFileId';
-import { getFileDetailsByCommentIdAndFileId } from '../../redux/actions/fileDetailsByCommentIdAndFileId';
-import { getProjectDetailsByFileIdAndProjectId } from '../../redux/actions/projectDetailsByFileIdAndProjectId';
-import { getUserDetailsByFileIdAndProjectId } from '../../redux/actions/userDetailsByFileIdAndProjectId';
-import { getTaskDetailsByFileIdAndProjectId } from '../../redux/actions/taskDetailsByFileIdAndProjectId';
-import { getCommentDetailsByFileIdAndProjectId } from '../../redux/actions/commentDetailsByFileIdAndProjectId';
-import { getFileDetailsByFileIdAndProjectId } from '../../redux/actions/fileDetailsByFileIdAndProjectId';
-import { getProjectDetailsByFileIdAndTaskId } from '../../redux/actions/projectDetailsByFileIdAndTaskId';
-import { getUserDetailsByFileIdAndTaskId } from '../../redux/actions/userDetailsByFileIdAndTaskId';
-import { getTaskDetailsByFileIdAndTaskId } from '../../redux/actions/taskDetailsByFileIdAndTaskId';
-import { getCommentDetailsByFileIdAndTaskId } from '../../redux/actions/commentDetailsByFileIdAndTaskId';
-import { getFileDetailsByFileIdAndTaskId } from '../../redux/actions/fileDetailsByFileIdAndTaskId';
-import { getProjectDetailsByFileIdAndCommentId } from '../../redux/actions/projectDetailsByFileIdAndCommentId';
-import { getUserDetailsByFileIdAndCommentId } from '../../redux/actions/userDetailsByFileIdAndCommentId';
-import { getTaskDetailsByFileIdAndCommentId } from '../../redux/actions/taskDetailsByFileIdAndCommentId';
-import { getCommentDetailsByFileIdAndCommentId } from '../../redux/actions/commentDetailsByFileIdAndCommentId';
-import { getFileDetailsByFileIdAndCommentId } from '../../redux/actions/fileDetailsByFileIdAndCommentId';
-import { getProjectDetailsByFileIdAndFileId } from '../../redux/actions/projectDetailsByFileIdAndFileId';
-import { getUserDetailsByFileIdAndFileId } from '../../redux/actions/userDetailsByFileIdAndFileId';
-import { getTaskDetailsByFileIdAndFileId } from '../../redux/actions/taskDetailsByFileIdAndFileId';
-import { getCommentDetailsByFileIdAndFileId } from '../../redux/actions/commentDetailsByFileIdAndFileId';
-import { getFileDetailsByFileIdAndFileId } from '../../redux/actions/fileDetailsByFileIdAndFileId';
-import { getProjectDetailsByProjectIdAndProjectId } from '../../redux/actions/projectDetailsByProjectIdAndProjectId';
-import { getUserDetailsByProjectIdAndProjectId } from '../../redux/actions/userDetailsByProjectIdAndProjectId';
-import { getTaskDetailsByProjectIdAndProjectId } from '../../redux/actions/taskDetailsByProjectIdAndProjectId';
-import { getCommentDetailsByProjectIdAndProjectId } from '../../redux/actions/commentDetailsByProjectIdAndProjectId';
-import { getFileDetailsByProjectIdAndProjectId } from '../../redux/actions/fileDetailsByProjectIdAndProjectId';
-import { getProjectDetailsByProjectIdAndTaskId } from '../../redux/actions/projectDetailsByProjectIdAndTaskId';
-import { getUserDetailsByProjectIdAndTaskId } from '../../redux/actions/userDetailsByProjectIdAndTaskId';
-import { getTaskDetailsByProjectIdAndTaskId } from '../../redux/actions/taskDetailsByProjectIdAndTaskId';
-import { getCommentDetailsByProjectIdAndTaskId } from '../../redux/actions/commentDetailsByProjectIdAndTaskId';
-import { getFileDetailsByProjectIdAndTaskId } from '../../redux/actions/fileDetailsByProjectIdAndTaskId';
-import { getProjectDetailsByProjectIdAndCommentId } from '../../redux/actions/projectDetailsByProjectIdAndCommentId';
-import { getUserDetailsByProjectIdAndCommentId } from '../../redux/actions/userDetailsByProjectIdAndCommentId';
-import { getTaskDetailsByProjectIdAndCommentId } from '../../redux/actions/taskDetailsByProjectIdAndCommentId';
-import { getCommentDetailsByProjectIdAndCommentId } from '../../redux/actions/commentDetailsByProjectIdAndCommentId';
-import { getFileDetailsByProjectIdAndCommentId } from '../../redux/actions/fileDetailsByProjectIdAndCommentId';
-import { getProjectDetailsByProjectIdAndFileId } from '../../redux/actions/projectDetailsByProjectIdAndFileId';
-import { getUserDetailsByProjectIdAndFileId } from '../../redux/actions/userDetailsByProjectIdAndFileId';
-import { getTaskDetailsByProjectIdAndFileId } from '../../redux/actions/taskDetailsByProjectIdAndFileId';
-import { getCommentDetailsByProjectIdAndFileId } from '../../redux/actions/commentDetailsByProjectIdAndFileId';
-import { getFileDetailsByProjectIdAndFileId } from '../../redux/actions/fileDetailsByProjectIdAndFileId';
-import { getProjectDetailsByTaskIdAndProjectId } from '../../redux/actions/projectDetailsByTaskIdAndProjectId';
-import { getUserDetailsByTaskIdAndProjectId } from '../../redux/actions/userDetailsByTaskIdAndProjectId';
-import { getTaskDetailsByTaskIdAndProjectId } from '../../redux/actions/taskDetailsByTaskIdAndProjectId';
-import { getCommentDetailsByTaskIdAndProjectId } from '../../redux/actions/commentDetailsByTaskIdAndProjectId';
-import { getFileDetailsByTaskIdAndProjectId } from '../../redux/actions/fileDetailsByTaskIdAndProjectId';
-import { getProjectDetailsByTaskIdAndCommentId } from '../../redux/actions/projectDetailsByTaskIdAndCommentId';
-import { getUserDetailsByTaskIdAndCommentId } from '../../redux/actions/userDetailsByTaskIdAndCommentId';
-import { getTaskDetailsByTaskIdAndCommentId } from '../../redux/actions/taskDetailsByTaskIdAndCommentId';
-import { getCommentDetailsByTaskIdAndCommentId } from '../../redux/actions/commentDetailsByTaskIdAndCommentId';
-import { getFileDetailsByTaskIdAndCommentId } from '../../redux/actions/fileDetailsByTaskIdAndCommentId';
-import { getProjectDetailsByTaskIdAndFileId } from '../../redux/actions/projectDetailsByTaskIdAndFileId';
-import { getUserDetailsByTaskIdAndFileId } from '../../redux/actions/userDetailsByTaskIdAndFileId';
-import { getTaskDetailsByTaskIdAndFileId } from '../../redux/actions/taskDetailsByTaskIdAndFileId';
-import { getCommentDetailsByTaskIdAndFileId } from '../../redux/actions/commentDetailsByTaskIdAndFileId';
-import { getFileDetailsByTaskIdAndFileId } from '../../redux/actions/fileDetailsByTaskIdAndFileId';
-import { getProjectDetailsByCommentIdAndProjectId } from '../../redux/actions/projectDetailsByCommentIdAndProjectId';
-import { getUserDetailsByCommentIdAndProjectId } from '../../redux/actions/userDetailsByCommentIdAndProjectId';
-import { getTaskDetailsByCommentIdAndProjectId } from '../../redux/actions/taskDetailsByCommentIdAndProjectId';
-import { getCommentDetailsByCommentIdAndProjectId } from '../../redux/actions/commentDetailsByCommentIdAndProjectId';
-import { getFileDetailsByCommentIdAndProjectId } from '../../redux/actions/fileDetailsByCommentIdAndProjectId';
-import { getProjectDetailsByCommentIdAndTaskId } from '../../redux/actions/projectDetailsByCommentIdAndTaskId';
-import { getUserDetailsByCommentIdAndTaskId } from '../../redux/actions/userDetailsByCommentIdAndTaskId';
-import { getTaskDetailsByCommentIdAndTaskId } from '../../redux/actions/taskDetailsByCommentIdAndTaskId';
-import { getCommentDetailsByCommentIdAndTaskId } from '../../redux/actions/commentDetailsByCommentIdAndTaskId';
-import { getFileDetailsByCommentIdAndTaskId } from '../../redux/actions/fileDetailsByCommentIdAndTaskId';
-import { getProjectDetailsByCommentIdAndFileId } from '../../redux/actions/projectDetailsByCommentIdAndFileId';
-import { getUserDetailsByCommentIdAndFileId } from '../../redux/actions/userDetailsByCommentIdAndFileId';
-import { getTaskDetailsByCommentIdAndFileId } from '../../redux/actions/taskDetailsByCommentIdAndFileId';
-import { getCommentDetailsByCommentIdAndFileId } from '../../redux/actions/commentDetailsByCommentIdAndFileId';
-import { getFileDetailsByCommentIdAndFileId } from '../../redux/actions/fileDetailsByCommentIdAndFileId';
-import { getProjectDetailsByFileIdAndProjectId } from '../../redux/actions/projectDetailsByFileIdAndProjectId';
-import { getUserDetailsByFileIdAndProjectId } from '../../redux/actions/userDetailsByFileIdAndProjectId';
-import { getTaskDetailsByFileIdAndProjectId } from '../../redux/actions/taskDetailsByFileIdAndProjectId';
-import { getCommentDetailsByFileIdAndProjectId } from '../../redux/actions/commentDetailsByFileIdAndProjectId';
-import { getFileDetailsByFileIdAndProjectId } from '../../redux/actions/fileDetailsByFileIdAndProjectId';
-import { getProjectDetailsByFileIdAndTaskId } from '../../redux/actions/projectDetailsByFileIdAndTaskId';
-import { getUserDetailsByFileIdAndTaskId } from '../../redux/actions/userDetailsByFileIdAndTaskId';
-import { getTaskDetailsByFileIdAndTaskId } from '../../redux/actions/taskDetailsByFileIdAndTaskId';
-import { getCommentDetailsByFileIdAndTaskId } from '../../redux/actions/commentDetailsByFileIdAndTaskId';
-import { getFileDetailsByFileIdAndTaskId } from '../../redux/actions/fileDetailsByFileIdAndTaskId';
-import { getProjectDetailsByFileIdAndCommentId } from '../../redux/actions/projectDetailsByFileIdAndCommentId';
-import { getUserDetailsByFileIdAndCommentId } from '../../redux/actions/userDetailsByFileIdAndCommentId';
-import { getTaskDetailsByFileIdAndCommentId } from '../../redux/actions/taskDetailsByFileIdAndCommentId';
-import { getCommentDetailsByFileIdAndCommentId } from '../../redux/actions/commentDetailsByFileIdAndCommentId';
-import { getFileDetailsByFileIdAndCommentId } from '../../redux/actions/fileDetailsByFileIdAndCommentId';
-import { getProjectDetailsByFileIdAndFileId } from '../../redux/actions/projectDetailsByFileIdAndFileId';
-import { getUserDetailsByFileIdAndFileId } from '../../redux/actions/userDetailsByFileIdAndFileId';
-import { getTaskDetailsByFileIdAndFileId } from '../../redux/actions/taskDetailsByFileIdAndFileId';
-import { getCommentDetailsByFileIdAndFileId } from '../../redux/actions/commentDetailsByFileIdAndFileId';
-import { getFileDetailsByFileIdAndFileId } from '../../redux/actions/fileDetailsByFileIdAndFileId';
-import { getProjectDetailsByProjectIdAndProjectId } from '../../redux/actions/projectDetailsByProjectIdAndProjectId';
-import { getUserDetailsByProjectIdAndProjectId } from '../../redux/actions/userDetailsByProjectIdAndProjectId';
-import { getTaskDetailsByProjectIdAndProjectId } from '../../redux/actions/taskDetailsByProjectIdAndProjectId';
-import { getCommentDetailsByProjectIdAndProjectId } from '../../redux/actions/commentDetailsByProjectIdAndProjectId';
-import { getFileDetailsByProjectIdAndProjectId } from '../../redux/actions/fileDetailsByProjectIdAndProjectId';
-import { getProjectDetailsByProjectIdAndTaskId } from '../../redux/actions/projectDetailsByProjectIdAndTaskId';
-import { getUserDetailsByProjectIdAndTaskId } from '../../redux/actions/userDetailsByProjectIdAndTaskId';
-import { getTaskDetailsByProjectIdAndTaskId } from '../../redux/actions/taskDetailsByProjectIdAndTaskId';
-import { getCommentDetailsByProjectIdAndTaskId } from '../../redux/actions/commentDetailsByProjectIdAndTaskId';
-import { getFileDetailsByProjectIdAndTaskId } from '../../redux/actions/fileDetailsByProjectIdAndTaskId';
-import { getProjectDetailsByProjectIdAndCommentId } from '../../redux/actions/projectDetailsByProjectIdAndCommentId';
-import { getUserDetailsByProjectIdAndCommentId } from '../../redux/actions/userDetailsByProjectIdAndCommentId';
-import { getTaskDetailsByProjectIdAndCommentId } from '../../redux/actions/taskDetailsByProjectIdAndCommentId';
-import { getCommentDetailsByProjectIdAndCommentId } from '../../redux/actions/commentDetailsByProjectIdAndCommentId';
-import { getFileDetailsByProjectIdAndCommentId } from '../../redux/actions/fileDetailsByProjectIdAndCommentId';
-import { getProjectDetailsByProjectIdAndFileId } from '../../redux/actions/projectDetailsByProjectIdAndFileId';
-import { getUserDetailsByProjectIdAndFileId } from '../../redux/actions/userDetailsByProjectIdAndFileId';
-import { getTaskDetailsByProjectIdAndFileId } from '../../redux/actions/taskDetailsByProjectIdAndFileId';
-import { getCommentDetailsByProjectIdAndFileId } from '../../redux/actions/commentDetailsByProjectIdAndFileId';
-import { getFileDetailsByProjectIdAndFileId } from '../../redux/actions/fileDetailsByProjectIdAndFileId';
-import { getProjectDetailsByTaskIdAndProjectId } from '../../redux/actions/projectDetailsByTaskIdAndProjectId';
-import { getUserDetailsByTaskIdAndProjectId } from '../../redux/actions/userDetailsByTaskIdAndProjectId';
-import { getTaskDetailsByTaskIdAndProjectId } from '../../redux/actions/taskDetailsByTaskIdAndProjectId';
-import { getCommentDetailsByTaskIdAndProjectId } from '../../redux/actions/commentDetailsByTaskIdAndProjectId';
-import { getFileDetailsByTaskIdAndProjectId } from '../../redux/actions/fileDetailsByTaskIdAndProjectId';
-import { getProjectDetailsByTaskIdAndCommentId } from '../../redux/actions/projectDetailsByTaskIdAndCommentId';
-import { getUserDetailsByTaskIdAndCommentId } from '../../redux/actions/userDetailsByTaskIdAndCommentId';
-import { getTaskDetailsByTaskIdAndCommentId } from '../../redux/actions/taskDetailsByTaskIdAndCommentId';
-import { getCommentDetailsByTaskIdAndCommentId } from '../../redux/actions/commentDetailsByTaskIdAndCommentId';
-import { getFileDetailsByTaskIdAndCommentId } from '../../redux/actions/fileDetailsByTaskIdAndCommentId';
-import { getProjectDetailsByTaskIdAndFileId } from '../../redux/actions/projectDetailsByTaskIdAndFileId';
-import { getUserDetailsByTaskIdAndFileId } from '../../redux/actions/userDetailsByTaskIdAndFileId';
-import { getTaskDetailsByTaskIdAndFileId } from '../../redux/actions/taskDetailsByTaskIdAndFileId';
-import { getCommentDetailsByTaskIdAndFileId } from '../../redux/actions/commentDetailsByTaskIdAndFileId';
-import { getFileDetailsByTaskIdAndFileId } from '../../redux/actions/fileDetailsByTaskIdAndFileId';
-import { getProjectDetailsByCommentIdAndProjectId } from '../../redux/actions/projectDetailsByCommentIdAndProjectId';
- 
+import ProjectCard from '../../components/ProjectCard';
+import { Project } from '../../types';
+import { useAuth } from '../../contexts/AuthContext';
+import { projectService } from '../../services/projectService';
+import { profileService } from '../../services/profileService';
+
+const ProjectsScreen = () => {
+  const navigation = useNavigation();
+  const { user } = useAuth();
+  const [projects, setProjects] = useState<Project[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [userRole, setUserRole] = useState<string | null>(null);
+
+  const fetchUserProfile = async () => {
+    try {
+      const profile = await profileService.getCurrentProfile();
+      const role = profile?.role?.toLowerCase() || null;
+      console.log('User role (lowercase):', role);
+      setUserRole(role);
+      return role;
+    } catch (err) {
+      console.error('Error fetching profile:', err);
+      return null;
+    }
+  };
+
+  const fetchProjects = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      const data = await projectService.getAll();
+      console.log('Projects fetched:', data?.length || 0);
+      setProjects(data || []);
+    } catch (err: any) {
+      console.error('Error fetching projects:', err);
+      setError(err.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    if (user) {
+      fetchUserProfile().then(() => fetchProjects());
+    } else {
+      setProjects([]);
+      setLoading(false);
+    }
+  }, [user]);
+
+  const handleProjectPress = (projectId: string) => {
+    navigation.navigate('ProjectTabs', { projectId });
+  };
+
+  const handleCreateProject = () => {
+    if (!userRole || (userRole !== 'admin' && userRole !== 'project manager')) {
+      setError('Only admin and project manager can create projects');
+      return;
+    }
+    navigation.navigate('CreateProject');
+  };
+
+  if (loading) {
+    return (
+      <View style={styles.centerContainer}>
+        <ActivityIndicator size="large" color="#1a237e" />
+      </View>
+    );
+  }
+
+  if (error) {
+    return (
+      <View style={styles.centerContainer}>
+        <Text style={styles.errorText}>Error: {error}</Text>
+        <TouchableOpacity style={styles.retryButton} onPress={fetchProjects}>
+          <Text style={styles.retryButtonText}>Retry</Text>
+        </TouchableOpacity>
+      </View>
+    );
+  }
+
+  if (projects.length === 0) {
+    return (
+      <View style={styles.centerContainer}>
+        <Text style={styles.emptyTitle}>Welcome to Projects</Text>
+        <Text style={styles.emptyText}>
+          {userRole === 'client' 
+            ? "You don't have any projects yet. Please contact your project manager."
+            : "You don't have any projects yet. Create your first project to get started!"}
+        </Text>
+        {(userRole === 'admin' || userRole === 'project manager') && (
+          <TouchableOpacity 
+            style={styles.createButtonLarge}
+            onPress={handleCreateProject}
+          >
+            <Text style={styles.createButtonText}>Create Your First Project</Text>
+          </TouchableOpacity>
+        )}
+      </View>
+    );
+  }
+
+  return (
+    <View style={styles.container}>
+      <View style={styles.header}>
+        <Text style={styles.headerTitle}>Projects</Text>
+        {(userRole === 'admin' || userRole === 'project manager') && (
+          <TouchableOpacity 
+            style={styles.createButton}
+            onPress={handleCreateProject}
+          >
+            <Text style={styles.createButtonText}>Create Project</Text>
+          </TouchableOpacity>
+        )}
+      </View>
+
+      <ScrollView style={styles.projectsContainer}>
+        <View style={styles.projectsGrid}>
+          {projects.map((project: Project) => (
+            <View key={project.id} style={styles.cardContainer}>
+              <ProjectCard
+                project={project}
+                onPress={() => handleProjectPress(project.id)}
+              />
+            </View>
+          ))}
+        </View>
+      </ScrollView>
+    </View>
+  );
+};
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: '#f5f5f5'
+  },
+  header: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    padding: 16,
+    backgroundColor: '#fff',
+    borderBottomWidth: 1,
+    borderBottomColor: '#e0e0e0'
+  },
+  headerTitle: {
+    fontSize: 24,
+    fontWeight: 'bold'
+  },
+  createButton: {
+    backgroundColor: '#1a237e',
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 4
+  },
+  createButtonText: {
+    color: '#fff',
+    fontWeight: '500'
+  },
+  centerContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 16
+  },
+  errorText: {
+    color: '#d32f2f',
+    fontSize: 16,
+    textAlign: 'center',
+    marginBottom: 16
+  },
+  retryButton: {
+    backgroundColor: '#1a237e',
+    paddingHorizontal: 24,
+    paddingVertical: 12,
+    borderRadius: 4
+  },
+  retryButtonText: {
+    color: '#fff',
+    fontSize: 16,
+    fontWeight: '500'
+  },
+  emptyText: {
+    color: '#666',
+    fontSize: 16,
+    marginBottom: 16,
+    textAlign: 'center'
+  },
+  projectsContainer: {
+    flex: 1
+  },
+  projectsGrid: {
+    padding: 16,
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    justifyContent: 'space-between'
+  },
+  cardContainer: {
+    width: '48%',
+    marginBottom: 16
+  },
+  emptyTitle: {
+    fontSize: 24,
+    fontWeight: 'bold',
+    color: '#333',
+    marginBottom: 12,
+    textAlign: 'center'
+  },
+  createButtonLarge: {
+    backgroundColor: '#1a237e',
+    paddingHorizontal: 32,
+    paddingVertical: 16,
+    borderRadius: 8,
+    marginTop: 24
+  }
+});
+
+export default ProjectsScreen; 
