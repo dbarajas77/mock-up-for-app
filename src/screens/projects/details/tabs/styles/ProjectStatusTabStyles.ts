@@ -163,30 +163,106 @@ export const styles = StyleSheet.create({
     color: '#001532',
     marginLeft: 8,
   },
+  // Progress bar outer container with circle marker
+  progressBarOuterContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    position: 'relative',
+    paddingVertical: 15, // Add padding to center the bar vertically
+    marginHorizontal: 10, // Add horizontal margin
+  },
+  // Date displayed above the progress bar
+  dateAboveBar: {
+    position: 'absolute',
+    top: -20,
+    transform: [{ translateX: -20 }], // Center the text
+    fontSize: 14,
+    fontWeight: '500',
+    color: '#333333',
+    width: 40,
+    textAlign: 'center',
+    zIndex: 20,
+  },
+  // Circle marker at start of progress bar
+  startDateCircle: {
+    width: 16,
+    height: 16,
+    borderRadius: 8,
+    backgroundColor: 'white',
+    borderWidth: 2,
+    borderColor: '#00FF00', // Bright green to match the progress
+    marginRight: -8, // Overlap with the progress bar
+    zIndex: 10,
+  },
+  // Progress bar container
   progressBarContainer: {
-    height: 8,
-    backgroundColor: '#E5E7EB',
-    borderRadius: 4,
+    flex: 1,
+    height: 16,
+    backgroundColor: 'white', // White background
+    borderWidth: 1,
+    borderColor: '#DDDDDD', // Light grey border
+    borderRadius: 8,
     overflow: 'hidden',
     marginBottom: 8,
+    position: 'relative',
   },
-  progressBarFill: {
-    height: '100%',
-    backgroundColor: '#00CC66', // Green
-    borderRadius: 4,
+  // Current date vertical line
+  currentDateLine: {
+    position: 'absolute',
+    top: -30, // Move higher
+    width: 1,
+    height: 70, // Make it extend further
+    backgroundColor: '#333333', // Darker color
+    zIndex: 15,
   },
-  progressMarkers: {
+  // Current date label
+  currentDateLabel: {
+    position: 'absolute',
+    top: -30, // Position higher above the line
+    left: -20,
+    fontSize: 12,
+    fontWeight: '600', // Make it bolder
+    color: '#333333',
+    width: 40,
+    textAlign: 'center',
+  },
+  // Detailed container for date labels and percentage
+  progressDetailsContainer: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    paddingHorizontal: 2,
-  },
-  progressMarkerItem: {
     alignItems: 'center',
+    paddingHorizontal: 5,
+    marginTop: 10,
   },
-  progressMarkerText: {
+  // Row for progress controls (buttons and percentage)
+  progressControlsRow: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+    gap: 10,
+  },
+  // Control buttons
+  controlButton: {
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
+    borderRadius: 4,
+    backgroundColor: '#F9FAFB',
+  },
+  controlButtonText: {
+    fontSize: 12,
+    fontWeight: '500',
+    color: '#6B7280',
+  },
+  barDateText: {
     fontSize: 12,
     color: '#6B7280',
-    marginTop: 4,
+  },
+  barPercentageText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#001532',
   },
   
   // Status Badge Colors
@@ -465,5 +541,154 @@ export const styles = StyleSheet.create({
     backgroundColor: '#f0f0f0',
     alignItems: 'center',
     justifyContent: 'center',
+  },
+  
+  // New Card Designs (Dark, colored backgrounds with white text)
+  timelineCardNew: {
+    backgroundColor: '#203648', // Dark navy background
+    borderRadius: 8,
+    padding: 16,
+    marginBottom: 16,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.2,
+    shadowRadius: 6,
+    elevation: 4,
+    width: '32%',
+  },
+  timelineCardTitle: {
+    fontSize: 12,
+    color: '#FFFFFF',
+    opacity: 0.8,
+    marginBottom: 4,
+    fontWeight: '500',
+  },
+  timelineCardContent: {
+    fontSize: 20,
+    color: '#FFFFFF',
+    fontWeight: '600',
+  },
+  statusCardNew: {
+    backgroundColor: '#10B981', // Green background
+    borderRadius: 8,
+    padding: 16,
+    marginBottom: 16,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.2,
+    shadowRadius: 6,
+    elevation: 4,
+    width: '32%',
+  },
+  priorityCardNew: {
+    backgroundColor: '#3B82F6', // Blue background
+    borderRadius: 8,
+    padding: 16,
+    marginBottom: 16,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.2,
+    shadowRadius: 6,
+    elevation: 4,
+    width: '32%',
+  },
+  editButton: {
+    position: 'absolute',
+    top: 12,
+    right: 12,
+    backgroundColor: 'rgba(255, 255, 255, 0.2)',
+    padding: 6,
+    borderRadius: 4,
+  },
+  // Date range progress bar styles
+  dateRangeContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-end',
+    marginBottom: 12,
+    position: 'relative',
+  },
+  dateText: {
+    fontSize: 12,
+    color: '#6B7280',
+  },
+  currentDateContainer: {
+    position: 'absolute',
+    left: '50%',
+    top: -24,
+    transform: [{ translateX: -20 }],
+    backgroundColor: '#10B981',
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderRadius: 12,
+    zIndex: 10,
+  },
+  currentDateText: {
+    fontSize: 12,
+    color: 'white',
+    fontWeight: '600',
+  },
+  currentDateMarker: {
+    position: 'absolute',
+    top: -24,
+    width: 40,
+    height: 24,
+    backgroundColor: '#10B981',
+    borderRadius: 12,
+    justifyContent: 'center',
+    alignItems: 'center',
+    transform: [{ translateX: -20 }],
+    zIndex: 10,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 3,
+    elevation: 2,
+  },
+  currentDateMarkerText: {
+    fontSize: 10,
+    color: 'white',
+    fontWeight: '600',
+  },
+  progressControlsContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginTop: 8,
+    marginBottom: 16,
+  },
+  progressButton: {
+    paddingHorizontal: 14,
+    paddingVertical: 6,
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
+    borderRadius: 4,
+    backgroundColor: '#F9FAFB',
+    minWidth: 100,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  progressButtonText: {
+    fontSize: 12,
+    fontWeight: '500',
+    color: '#6B7280',
+  },
+  percentageContainer: {
+    width: 60,
+    alignItems: 'center',
+  },
+  percentageText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#111827',
+  },
+  // Date line indicator style for current date
+  datePositionLine: {
+    position: 'absolute',
+    top: 0,
+    width: 2,
+    height: '100%',
+    backgroundColor: '#001532', // Dark color for the line
+    zIndex: 5,
   },
 }); 

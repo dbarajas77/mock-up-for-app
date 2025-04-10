@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { 
   Modal, 
   View, 
@@ -6,16 +6,19 @@ import {
   StyleSheet, 
   TouchableOpacity, 
   ScrollView,
-  Image,
+  Image as ReactNativeImage, // Alias the import
   ActivityIndicator,
   Dimensions,
   PanResponder,
-  TextInput
+  TextInput,
+  useWindowDimensions,
+  Platform
 } from 'react-native';
 import { Feather } from '@expo/vector-icons';
 import { Photo } from '../../services/photoService';
 import { photoTasksService } from '../../services/photoTasksService';
 import { tasksService, Task as ProjectTask } from '../../services/tasks';
+import DateTimePicker from '@react-native-community/datetimepicker';
 
 // Import our modular components
 import DrawingCanvas from './DrawingCanvas';
@@ -35,12 +38,83 @@ const AnnotationsModal: React.FC<AnnotationsModalProps> = ({
   onClose,
   onUpdate
 }) => {
+  // Get window dimensions for responsive layout
+  const { width: windowWidth, height: windowHeight } = useWindowDimensions();
+  const isMobile = windowWidth < 768;
+  
+  // Normalize and validate the photo URL
+  const normalizedPhotoUrl = useMemo(() => {
+    if (!photo) {
+      console.log('No photo provided to AnnotationsModal');
+      return null;
+    }
+    
+    if (!photo.url) {
+      console.log('Photo has no URL:', photo);
+      return null;
+    }
+    
+    let url = photo.url.trim();
+    console.log('Original URL from photo object:', url);
+    
+    // Handle localhost URLs
+    if (url.includes('localhost')) {
+      console.log('Found localhost URL');
+      
+      // Extract the URL parts
+      try {
+        const urlObj = new URL(url);
+        console.log('Parsed URL object:', {
+          protocol: urlObj.protocol,
+          hostname: urlObj.hostname,
+          port: urlObj.port,
+          pathname: urlObj.pathname
+        });
+        
+        // Make sure protocol is correctly set
+        if (!urlObj.protocol || urlObj.protocol === ':') {
+          console.log('Fixing missing protocol');
+          url = `http://${url}`;
+        }
+        
+        return url;
+      } catch (e) {
+        console.error('Error parsing localhost URL:', e);
+        
+        // Try to fix common localhost URL format issues
+        if (url.includes('localhost:') && !url.startsWith('http')) {
+          console.log('Adding http:// to localhost URL');
+          url = `http://${url}`;
+        }
+        
+        return url;
+      }
+    }
+    
+    // Check if it's a relative URL and prepend base URL if needed
+    if (url.startsWith('/')) {
+      console.log('Found relative URL, adding origin');
+      url = `${window.location.origin}${url}`;
+    }
+    
+    // Check if it has a valid protocol
+    if (!url.startsWith('http://') && !url.startsWith('https://') && !url.startsWith('data:')) {
+      console.log('URL has no protocol, adding https://');
+      // Add https by default
+      url = `https://${url}`;
+    }
+    
+    console.log('📸 Normalized URL:', { original: photo.url, normalized: url });
+    return url;
+  }, [photo]);
+  
   // Photo metadata state
-  const [title, setTitle] = useState('');
-  const [date, setDate] = useState('');
+  const [title, setTitle] = useState(photo.title || photo.name || ''); // Use title or name
+  const [date, setDate] = useState(photo.date || new Date().toISOString().split('T')[0]); // Initialize with string date
+  const [showDatePicker, setShowDatePicker] = useState(false);
   const [tags, setTags] = useState<string[]>([]);
   const [newTag, setNewTag] = useState('');
-  const [progress, setProgress] = useState(0);
+  const [progress, setProgress] = useState(64);
   
   // Tasks state
   const [tasks, setTasks] = useState<Task[]>([]);
@@ -56,7 +130,7 @@ const AnnotationsModal: React.FC<AnnotationsModalProps> = ({
   // Drawing state
   const [imageHeight, setImageHeight] = useState(400);
   const [isDrawingMode, setIsDrawingMode] = useState(false);
-  const [drawingColor, setDrawingColor] = useState('#FF0000'); // Red
+  const [drawingColor, setDrawingColor] = useState('#FF3B30');
   const [drawingWidth, setDrawingWidth] = useState(3);
   const [drawings, setDrawings] = useState<Line[]>([]);
   const [currentLine, setCurrentLine] = useState<Point[]>([]);
@@ -64,6 +138,9 @@ const AnnotationsModal: React.FC<AnnotationsModalProps> = ({
   
   // UI state
   const [isSaving, setIsSaving] = useState(false);
+  
+  // Add state for layout
+  const [layout, setLayout] = useState({ width: windowWidth, height: windowHeight });
   
   // Create PanResponder for drawing
   const panResponder = useRef(
@@ -131,7 +208,7 @@ const AnnotationsModal: React.FC<AnnotationsModalProps> = ({
       
       // Initialize with photo data if available
       setTitle(photo.title || photo.name || '');
-      setDate(photo.date || new Date().toLocaleDateString());
+      setDate(photo.date || new Date().toISOString().split('T')[0]); // Use string date
       setTags(photo.tags || []);
       setProgress(photo.progress || 0);
       
@@ -200,6 +277,27 @@ const AnnotationsModal: React.FC<AnnotationsModalProps> = ({
       setImageHeight(screenHeight * 0.6); // 60% of screen height
     }
   }, [visible, photo]);
+
+  // Add more detailed logging for the image
+  useEffect(() => {
+    if (visible && photo) {
+      console.log('📸 Photo data:', {
+        id: photo.id,
+        name: photo.name,
+        filename: photo.filename,
+        originalUrl: photo.url,
+        normalizedUrl: normalizedPhotoUrl
+      });
+      
+      // Test if the image is accessible
+      if (normalizedPhotoUrl) {
+        const testImage = new Image();
+        testImage.onload = () => console.log('✅ Test image loaded successfully');
+        testImage.onerror = (err) => console.error('❌ Test image failed to load:', err);
+        testImage.src = normalizedPhotoUrl;
+      }
+    }
+  }, [visible, photo, normalizedPhotoUrl]);
 
   // Event handlers for tasks
   const handleAddTask = async () => {
@@ -429,6 +527,23 @@ const AnnotationsModal: React.FC<AnnotationsModalProps> = ({
     setDrawings([]);
   };
 
+  const handleDateChange = (event: any, selectedDate?: Date) => {
+    setShowDatePicker(Platform.OS === 'ios'); // Keep open on iOS until dismissed
+    if (selectedDate) {
+      // Ensure the date state is always a string in 'YYYY-MM-DD' format
+      setDate(selectedDate.toISOString().split('T')[0]); 
+    }
+  };
+
+  const renderPriorityButton = (taskId: string, priorityLevel: string, color: string, selected: boolean) => (
+    <TouchableOpacity 
+      style={[styles.priorityButton, { backgroundColor: selected ? color : 'transparent' }]}
+      onPress={() => updateTaskPriority(taskId, priorityLevel as 'Low' | 'Medium' | 'High')}
+    >
+      <View style={[styles.priorityDot, { backgroundColor: color }]} />
+    </TouchableOpacity>
+  );
+
   // Save all changes
   const handleSave = async () => {
     if (!photo) return;
@@ -439,7 +554,8 @@ const AnnotationsModal: React.FC<AnnotationsModalProps> = ({
       return;
     }
     
-    if (!date.trim()) {
+    // Validate date is properly set - date is a Date object, not a string
+    if (!date) {
       alert('Date is required');
       return;
     }
@@ -447,16 +563,11 @@ const AnnotationsModal: React.FC<AnnotationsModalProps> = ({
     setIsSaving(true);
     try {
       // Ensure date is in the correct format (YYYY-MM-DD)
-      let formattedDate = date;
-      try {
-        // Try to parse and format the date if it's not already in the correct format
-        const dateObj = new Date(date);
-        if (!isNaN(dateObj.getTime())) {
-          formattedDate = dateObj.toISOString().split('T')[0];
-        }
-      } catch (e) {
-        console.warn('Could not parse date:', e);
-      }
+      let formattedDate = typeof date === 'string' 
+        ? date 
+        : date instanceof Date 
+          ? date.toISOString().split('T')[0]
+          : new Date().toISOString().split('T')[0];
       
       // Create updated photo object with all fields
       const updatedPhoto = {
@@ -591,6 +702,162 @@ const AnnotationsModal: React.FC<AnnotationsModalProps> = ({
     syncExistingTasks();
   }, [visible, photo, tasks]);
 
+  // Update layout styles based on screen size
+  const getContentContainerStyle = () => {
+    return {
+      ...styles.contentContainer,
+      flexDirection: isMobile ? 'column' : 'row'
+    };
+  };
+
+  const getImageContainerStyle = () => {
+    return {
+      ...styles.imageContainer,
+      width: isMobile ? '100%' : '70%',
+      height: isMobile ? '50%' : '100%',
+      borderRightWidth: isMobile ? 0 : 1,
+      borderBottomWidth: isMobile ? 1 : 0,
+    };
+  };
+
+  const getDataContainerStyle = () => {
+    return {
+      ...styles.dataContainer,
+      width: isMobile ? '100%' : '30%',
+      height: isMobile ? '50%' : '100%',
+    };
+  };
+
+  // Update LoadableImage to use proper DOM elements for web
+  // Add explicit types for props
+  interface LoadableImageProps {
+    source: { uri: string };
+    style: any; // Use 'any' for style for simplicity, could be more specific
+    onLoad?: (event?: any) => void;
+    onError?: (event?: any) => void;
+  }
+  const LoadableImage: React.FC<LoadableImageProps> = ({ source, style, onLoad, onError }) => {
+    const [imageLoaded, setImageLoaded] = useState(false);
+    const [error, setError] = useState(false);
+    const isWeb = Platform.OS === 'web';
+    
+    // For debugging
+    useEffect(() => {
+      console.log('📸 LoadableImage source:', source, 'Platform:', Platform.OS);
+    }, [source]);
+    
+    // Web-specific approach (use div/img instead of View/Image)
+    if (isWeb && source.uri) {
+      return (
+        <div style={{
+          position: 'relative',
+          width: '100%',
+          height: '100%',
+          display: 'flex',
+          justifyContent: 'center',
+          alignItems: 'center'
+        }}>
+          {!imageLoaded && !error && (
+            <div style={{
+              position: 'absolute',
+              top: 0,
+              left: 0,
+              width: '100%',
+              height: '100%',
+              display: 'flex',
+              flexDirection: 'column',
+              justifyContent: 'center',
+              alignItems: 'center',
+              backgroundColor: '#f0f0f0'
+            }}>
+              <div style={{ marginBottom: 10 }}>
+                <svg width="40" height="40" viewBox="0 0 100 100">
+                  <circle cx="50" cy="50" r="32" strokeWidth="8" stroke="#10B981" strokeDasharray="50.26548 50.26548" fill="none">
+                    <animateTransform attributeName="transform" type="rotate" repeatCount="indefinite" dur="1s" keyTimes="0;1" values="0 50 50;360 50 50"></animateTransform>
+                  </circle>
+                </svg>
+              </div>
+              <div style={{ fontSize: 16, color: '#666' }}>Loading image...</div>
+            </div>
+          )}
+          
+          {error && (
+            <div style={{
+              position: 'absolute',
+              top: 0,
+              left: 0,
+              width: '100%',
+              height: '100%',
+              display: 'flex',
+              justifyContent: 'center',
+              alignItems: 'center',
+              backgroundColor: '#f0f0f0'
+            }}>
+              <div style={{ fontSize: 16, color: 'red' }}>Failed to load image</div>
+            </div>
+          )}
+          
+          <img 
+            src={source.uri}
+            alt="Photo"
+            style={{
+              maxWidth: '100%',
+              maxHeight: '100%',
+              objectFit: 'contain',
+              opacity: imageLoaded ? 1 : 0,
+            }}
+            onLoad={() => {
+              console.log('✅ Web image loaded via direct img tag');
+              setImageLoaded(true);
+              onLoad && onLoad();
+            }}
+            onError={(e) => {
+              console.error('❌ Web image error via direct img tag:', e);
+              setError(true);
+              onError && onError(e);
+            }}
+          />
+        </div>
+      );
+    }
+    
+    // React Native approach for mobile
+    return (
+      <View style={[style, { position: 'relative' }]}>
+        {!imageLoaded && !error && (
+          <View style={[style, styles.imagePlaceholder]}>
+            <ActivityIndicator size="large" color="#10B981" />
+            <Text style={styles.placeholderText}>Loading image...</Text>
+          </View>
+        )}
+        
+        {error && (
+          <View style={[style, styles.imagePlaceholder]}>
+            <Text style={[styles.placeholderText, { color: 'red' }]}>
+              Failed to load image
+            </Text>
+          </View>
+        )}
+        
+        <ReactNativeImage // Use the alias here
+          source={source}
+          style={[style, { opacity: imageLoaded ? 1 : 0 }]}
+          resizeMode="contain"
+          onLoad={(e) => {
+            console.log('✅ Image loaded in LoadableImage');
+            setImageLoaded(true);
+            onLoad && onLoad(e);
+          }}
+          onError={(e) => {
+            console.error('❌ Image error in LoadableImage:', e.nativeEvent?.error);
+            setError(true);
+            onError && onError(e);
+          }}
+        />
+      </View>
+    );
+  };
+
   if (!photo) {
     return null;
   }
@@ -598,146 +865,178 @@ const AnnotationsModal: React.FC<AnnotationsModalProps> = ({
   return (
     <Modal
       visible={visible}
-      animationType="slide"
       transparent={true}
+      animationType="fade"
       onRequestClose={onClose}
     >
       <View style={styles.modalOverlay}>
-        <View style={styles.modalContent}>
-          {/* Header */}
-          <View style={styles.modalHeader}>
-            <Text style={styles.modalTitle}>Photo Details</Text>
-            <TouchableOpacity onPress={onClose} style={styles.closeButton}>
-              <Feather name="x" size={24} color="#000" />
+        <View 
+          style={styles.modalContent}
+          onLayout={(event) => {
+            const { width, height } = event.nativeEvent.layout;
+            setLayout({ width, height });
+          }}
+        >
+          <View style={styles.header}>
+            <Text style={styles.headerTitle}>Photo Details</Text>
+            <TouchableOpacity style={styles.closeButton} onPress={onClose}>
+              <Feather name="x" size={24} color="#333" />
             </TouchableOpacity>
           </View>
           
-          {/* Main Content Area */}
-          <View style={styles.contentContainer}>
-            {/* Left: Image Area */}
-            <View style={styles.imageContainer}>
-              {/* Image itself */}
-              <Image 
-                source={{ uri: photo.url }} 
-                style={styles.image}
-              />
-              
-              {/* Drawing Tools Panel - Top Right */}
-              <View style={styles.drawingToolsContainer}>
+          <View style={getContentContainerStyle()}>
+            <View style={getImageContainerStyle()}>
+              {/* Draw Tools Controls */}
+              <View style={styles.drawControlsBar}>
+                <View style={styles.drawControlsSection}>
+                  <TouchableOpacity 
+                    style={[styles.drawToolButton, isDrawingMode && styles.drawToolButtonActive]} 
+                    onPress={toggleDrawingMode}
+                  >
+                    <Feather name="edit-2" size={20} color={isDrawingMode ? "#fff" : "#333"} />
+                  </TouchableOpacity>
+                  
+                  <View style={styles.colorOptions}>
+                    <TouchableOpacity 
+                      style={[styles.colorOption, { backgroundColor: '#FF3B30' }, drawingColor === '#FF3B30' && styles.colorOptionSelected]}
+                      onPress={() => setDrawingColor('#FF3B30')}
+                    />
+                    <TouchableOpacity 
+                      style={[styles.colorOption, { backgroundColor: '#10B981' }, drawingColor === '#10B981' && styles.colorOptionSelected]}
+                      onPress={() => setDrawingColor('#10B981')}
+                    />
+                    <TouchableOpacity 
+                      style={[styles.colorOption, { backgroundColor: '#007AFF' }, drawingColor === '#007AFF' && styles.colorOptionSelected]}
+                      onPress={() => setDrawingColor('#007AFF')}
+                    />
+                  </View>
+                </View>
+                
                 <TouchableOpacity 
-                  style={[styles.toolButton, isDrawingMode && styles.toolButtonActive]} 
-                  onPress={toggleDrawingMode}
+                  style={styles.clearButton} 
+                  onPress={clearDrawings}
                 >
-                  <Feather 
-                    name={isDrawingMode ? "edit-2" : "edit"} 
-                    size={18} 
-                    color={isDrawingMode ? "#fff" : "#333"} 
-                  />
-                </TouchableOpacity>
-                <TouchableOpacity 
-                  style={[styles.colorButton, { backgroundColor: '#FF0000' }]} 
-                  onPress={() => setDrawingColor('#FF0000')} 
-                />
-                <TouchableOpacity 
-                  style={[styles.colorButton, { backgroundColor: '#00FF00' }]} 
-                  onPress={() => setDrawingColor('#00FF00')} 
-                />
-                <TouchableOpacity 
-                  style={[styles.colorButton, { backgroundColor: '#0000FF' }]} 
-                  onPress={() => setDrawingColor('#0000FF')} 
-                />
-                <TouchableOpacity style={styles.toolButton} onPress={clearDrawings}>
-                  <Feather name="trash-2" size={18} color="#333" />
+                  <Feather name="trash-2" size={20} color="#333" />
                 </TouchableOpacity>
               </View>
               
-              {/* Drawing Canvas Overlay */}
-              <View 
-                style={{
-                  position: 'absolute',
-                  top: 0,
-                  left: 0,
-                  right: 0,
-                  bottom: 0,
-                  backgroundColor: 'transparent'
-                }}
-                pointerEvents={isDrawingMode ? 'auto' : 'none'}
-                {...panResponder.panHandlers}
-                onLayout={(event) => {
-                  const { x, y, width, height } = event.nativeEvent.layout;
-                  setCanvasLayout({ x, y, width, height });
-                }}
-              >
-                {/* Render existing lines */}
-                {drawings.map((line, lineIndex) => (
-                  <View key={`line-${lineIndex}`} style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 }}>
-                    {line.points.map((point, pointIndex) => (
-                      pointIndex > 0 && (
-                        <View 
-                          key={`point-${pointIndex}`}
-                          style={{
-                            position: 'absolute',
-                            left: line.points[pointIndex - 1].x,
-                            top: line.points[pointIndex - 1].y,
-                            width: Math.sqrt(
-                              Math.pow(point.x - line.points[pointIndex - 1].x, 2) + 
-                              Math.pow(point.y - line.points[pointIndex - 1].y, 2)
-                            ),
-                            height: line.width,
-                            backgroundColor: line.color,
-                            transformOrigin: 'left',
-                            transform: [
-                              {
-                                rotate: `${Math.atan2(
-                                  point.y - line.points[pointIndex - 1].y,
-                                  point.x - line.points[pointIndex - 1].x
-                                )}rad`
-                              }
-                            ]
-                          }}
-                        />
-                      )
-                    ))}
-                  </View>
-                ))}
-                
-                {/* Render current line */}
-                {currentLine.length > 1 && (
-                  <View style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 }}>
-                    {currentLine.map((point, pointIndex) => (
-                      pointIndex > 0 && (
-                        <View 
-                          key={`current-point-${pointIndex}`}
-                          style={{
-                            position: 'absolute',
-                            left: currentLine[pointIndex - 1].x,
-                            top: currentLine[pointIndex - 1].y,
-                            width: Math.sqrt(
-                              Math.pow(point.x - currentLine[pointIndex - 1].x, 2) + 
-                              Math.pow(point.y - currentLine[pointIndex - 1].y, 2)
-                            ),
-                            height: drawingWidth,
-                            backgroundColor: drawingColor,
-                            transformOrigin: 'left',
-                            transform: [
-                              {
-                                rotate: `${Math.atan2(
-                                  point.y - currentLine[pointIndex - 1].y,
-                                  point.x - currentLine[pointIndex - 1].x
-                                )}rad`
-                              }
-                            ]
-                          }}
-                        />
-                      )
-                    ))}
+              {/* Image and Canvas Area */}
+              <View style={styles.imageWrapper}>
+                {normalizedPhotoUrl ? (
+                  <>
+                    <LoadableImage 
+                      source={{ uri: normalizedPhotoUrl }} 
+                      style={styles.image}
+                      onLoad={() => console.log("✅ Image loaded successfully:", normalizedPhotoUrl)}
+                      onError={(e) => {
+                        console.error("❌ Image loading error:", e.nativeEvent?.error);
+                        console.error("❌ Attempted to load URL:", normalizedPhotoUrl);
+                      }}
+                    />
+                    <Text style={styles.debugText}>
+                      Image URL: {normalizedPhotoUrl ? normalizedPhotoUrl.substring(0, 30) + '...' : 'No URL'}
+                    </Text>
+                  </>
+                ) : (
+                  <View style={styles.imagePlaceholder}>
+                    <ActivityIndicator size="large" color="#10B981" />
+                    <Text style={styles.placeholderText}>
+                      No image URL available
+                    </Text>
+                    <Text style={styles.placeholderText}>
+                      {photo ? `Photo data: ID=${photo.id || 'unknown'}, Name=${photo.name || photo.title || "Unnamed"}` : "No photo data"} 
+                    </Text>
+                    <Text style={styles.placeholderText}>
+                      Raw URL: {photo?.url || 'none'}
+                    </Text>
                   </View>
                 )}
+                
+                <View 
+                  style={{
+                    position: 'absolute',
+                    top: 0,
+                    left: 0,
+                    right: 0,
+                    bottom: 0,
+                    backgroundColor: 'transparent'
+                  }}
+                  pointerEvents={isDrawingMode ? 'auto' : 'none'}
+                  {...panResponder.panHandlers}
+                  onLayout={(event) => {
+                    const { x, y, width, height } = event.nativeEvent.layout;
+                    setCanvasLayout({ x, y, width, height });
+                  }}
+                >
+                  {drawings.map((line, lineIndex) => (
+                    <View key={`line-${lineIndex}`} style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 }}>
+                      {line.points.map((point, pointIndex) => (
+                        pointIndex > 0 && (
+                          <View 
+                            key={`point-${pointIndex}`}
+                            style={{
+                              position: 'absolute',
+                              left: line.points[pointIndex - 1].x,
+                              top: line.points[pointIndex - 1].y,
+                              width: Math.sqrt(
+                                Math.pow(point.x - line.points[pointIndex - 1].x, 2) + 
+                                Math.pow(point.y - line.points[pointIndex - 1].y, 2)
+                              ),
+                              height: line.width,
+                              backgroundColor: line.color,
+                              transformOrigin: 'left',
+                              transform: [
+                                {
+                                  rotate: `${Math.atan2(
+                                    point.y - line.points[pointIndex - 1].y,
+                                    point.x - line.points[pointIndex - 1].x
+                                  )}rad`
+                                }
+                              ]
+                            }}
+                          />
+                        )
+                      ))}
+                    </View>
+                  ))}
+                  
+                  {currentLine.length > 1 && (
+                    <View style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 }}>
+                      {currentLine.map((point, pointIndex) => (
+                        pointIndex > 0 && (
+                          <View 
+                            key={`current-point-${pointIndex}`}
+                            style={{
+                              position: 'absolute',
+                              left: currentLine[pointIndex - 1].x,
+                              top: currentLine[pointIndex - 1].y,
+                              width: Math.sqrt(
+                                Math.pow(point.x - currentLine[pointIndex - 1].x, 2) + 
+                                Math.pow(point.y - currentLine[pointIndex - 1].y, 2)
+                              ),
+                              height: drawingWidth,
+                              backgroundColor: drawingColor,
+                              transformOrigin: 'left',
+                              transform: [
+                                {
+                                  rotate: `${Math.atan2(
+                                    point.y - currentLine[pointIndex - 1].y,
+                                    point.x - currentLine[pointIndex - 1].x
+                                  )}rad`
+                                }
+                              ]
+                            }}
+                          />
+                        )
+                      ))}
+                    </View>
+                  )}
+                </View>
               </View>
             </View>
             
             {/* Right: Data Fields Area */}
-            <ScrollView style={styles.dataContainer}>
+            <ScrollView style={getDataContainerStyle()}>
               <PhotoMetadata
                 title={title}
                 date={date}
@@ -753,17 +1052,17 @@ const AnnotationsModal: React.FC<AnnotationsModalProps> = ({
               />
               
               {/* Notes Section */}
-              <View style={styles.fieldContainer}>
-                <Text style={styles.fieldLabel}>Notes</Text>
-                <View style={styles.notesList}>
-                  {notes.map(note => (
-                    <View key={note.id} style={styles.noteItem}>
-                      <Text style={styles.noteText}>{note.text}</Text>
-                      <Text style={styles.noteTimestamp}>{note.timestamp}</Text>
-                    </View>
-                  ))}
-                </View>
-                <View style={[styles.noteInputContainer, { height: noteInputHeight }]}>
+              <View style={styles.sectionBox}>
+                <View style={styles.fieldContainer}>
+                  <View style={styles.fieldLabelContainer}>
+                    <Text style={styles.fieldLabel}>Notes</Text>
+                    <TouchableOpacity 
+                      style={styles.addCircleButton}
+                      onPress={handleAddNote}
+                    >
+                      <Feather name="plus" size={16} color="#fff" />
+                    </TouchableOpacity>
+                  </View>
                   <TextInput
                     style={styles.noteInput}
                     value={newNote}
@@ -771,96 +1070,67 @@ const AnnotationsModal: React.FC<AnnotationsModalProps> = ({
                     placeholder="Add notes here..."
                     multiline
                     textAlignVertical="top"
+                    numberOfLines={4}
                   />
-                  <TouchableOpacity 
-                    style={styles.addButton}
-                    onPress={handleAddNote}
-                  >
-                    <Feather name="plus" size={20} color="#fff" />
-                  </TouchableOpacity>
-                  <View 
-                    style={styles.resizeHandle}
-                    {...noteResizeResponder.panHandlers}
-                  >
-                    <Feather name="chevrons-down" size={20} color="#333" />
+                  <View style={styles.notesList}>
+                    {notes.map(note => (
+                      <View key={note.id} style={styles.noteItem}>
+                        <Text style={styles.noteText}>{note.text}</Text>
+                        <Text style={styles.noteTimestamp}>{note.timestamp}</Text>
+                      </View>
+                    ))}
                   </View>
                 </View>
               </View>
               
               {/* Tasks field */}
-              <View style={styles.fieldContainer}>
-                <Text style={styles.fieldLabel}>Tasks</Text>
-                <View style={styles.tasksList}>
-                  {tasks.map(task => (
-                    <View key={task.id} style={styles.taskItem}>
-                      <TouchableOpacity 
-                        style={[styles.checkbox, task.completed && styles.checkboxChecked]}
-                        onPress={() => toggleTaskCompletion(task.id)}
-                      >
-                        {task.completed && <Feather name="check" size={14} color="#fff" />}
-                      </TouchableOpacity>
-                      
-                      <Text style={[
-                        styles.taskText, 
-                        task.completed && styles.taskTextCompleted
-                      ]}>
-                        {task.text}
-                      </Text>
-                      
-                      <View style={styles.priorityContainer}>
-                        <TouchableOpacity
-                          style={[
-                            styles.priorityButton,
-                            task.priority === 'Low' && styles.priorityButtonActive
-                          ]}
-                          onPress={() => updateTaskPriority(task.id, 'Low')}
-                        >
-                          <Text style={styles.priorityText}>Low</Text>
-                        </TouchableOpacity>
-                        
-                        <TouchableOpacity
-                          style={[
-                            styles.priorityButton,
-                            task.priority === 'Medium' && styles.priorityButtonActive
-                          ]}
-                          onPress={() => updateTaskPriority(task.id, 'Medium')}
-                        >
-                          <Text style={styles.priorityText}>Med</Text>
-                        </TouchableOpacity>
-                        
-                        <TouchableOpacity
-                          style={[
-                            styles.priorityButton,
-                            task.priority === 'High' && styles.priorityButtonActive
-                          ]}
-                          onPress={() => updateTaskPriority(task.id, 'High')}
-                        >
-                          <Text style={styles.priorityText}>High</Text>
-                        </TouchableOpacity>
-                      </View>
-                    </View>
-                  ))}
-                </View>
-                
-                <View style={styles.addTaskContainer}>
+              <View style={styles.sectionBox}>
+                <View style={styles.fieldContainer}>
+                  <View style={styles.fieldLabelContainer}>
+                    <Text style={styles.fieldLabel}>Tasks</Text>
+                    <TouchableOpacity 
+                      style={styles.addCircleButton}
+                      onPress={handleAddTask}
+                      disabled={isAddingTask}
+                    >
+                      {isAddingTask ? (
+                        <ActivityIndicator size="small" color="#fff" />
+                      ) : (
+                        <Feather name="plus" size={16} color="#fff" />
+                      )}
+                    </TouchableOpacity>
+                  </View>
                   <TextInput
                     style={styles.addTaskInput}
                     value={newTask}
                     onChangeText={setNewTask}
                     placeholder="Add a new task..."
                   />
-                  
-                  <TouchableOpacity 
-                    style={styles.addButton}
-                    onPress={handleAddTask}
-                    disabled={isAddingTask}
-                  >
-                    {isAddingTask ? (
-                      <ActivityIndicator size="small" color="#fff" />
-                    ) : (
-                      <Feather name="plus" size={20} color="#fff" />
-                    )}
-                  </TouchableOpacity>
+                  <View style={styles.tasksList}>
+                    {tasks.map(task => (
+                      <View key={task.id} style={styles.taskItem}>
+                        <TouchableOpacity 
+                          style={[styles.checkbox, task.completed && styles.checkboxChecked]}
+                          onPress={() => toggleTaskCompletion(task.id)}
+                        >
+                          {task.completed && <Feather name="check" size={14} color="#fff" />}
+                        </TouchableOpacity>
+                        
+                        <Text style={[
+                          styles.taskText, 
+                          task.completed && styles.taskTextCompleted
+                        ]}>
+                          {task.text}
+                        </Text>
+                        
+                        <View style={styles.priorityContainer}>
+                          {renderPriorityButton(task.id, 'Low', '#10B981', task.priority === 'Low')}
+                          {renderPriorityButton(task.id, 'Medium', '#FBBF24', task.priority === 'Medium')}
+                          {renderPriorityButton(task.id, 'High', '#EF4444', task.priority === 'High')}
+                        </View>
+                      </View>
+                    ))}
+                  </View>
                 </View>
               </View>
               
@@ -874,10 +1144,7 @@ const AnnotationsModal: React.FC<AnnotationsModalProps> = ({
                   {isSaving ? (
                     <ActivityIndicator color="#fff" size="small" />
                   ) : (
-                    <View style={styles.buttonInner}>
-                      <Feather name="save" size={20} color="#fff" />
-                      <Text style={styles.buttonText}>Save</Text>
-                    </View>
+                    <Text style={styles.saveButtonText}>Save</Text>
                   )}
                 </TouchableOpacity>
                 
@@ -886,10 +1153,7 @@ const AnnotationsModal: React.FC<AnnotationsModalProps> = ({
                   onPress={onClose}
                   disabled={isSaving}
                 >
-                  <View style={styles.buttonInner}>
-                    <Feather name="x" size={20} color="#fff" />
-                    <Text style={styles.buttonText}>Cancel</Text>
-                  </View>
+                  <Text style={styles.cancelButtonText}>Cancel</Text>
                 </TouchableOpacity>
               </View>
             </ScrollView>
@@ -922,7 +1186,7 @@ const styles = StyleSheet.create({
     shadowRadius: 3.84,
     elevation: 5
   },
-  modalHeader: {
+  header: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
@@ -930,7 +1194,7 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: '#e0e0e0'
   },
-  modalTitle: {
+  headerTitle: {
     fontSize: 18,
     fontWeight: 'bold'
   },
@@ -939,168 +1203,111 @@ const styles = StyleSheet.create({
   },
   contentContainer: {
     flex: 1,
-    flexDirection: 'row'
+    flexDirection: 'row',
+    flexWrap: 'wrap',
   },
   imageContainer: {
-    width: '50%',
+    width: '70%',
     height: '100%',
     borderRightWidth: 1,
     borderRightColor: '#e0e0e0',
     position: 'relative',
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: '#f8f8f8'
+    backgroundColor: '#f8f8f8',
+    // Removed @media query - handled by getImageContainerStyle function
   },
   image: {
     width: '100%',
     height: '100%',
-    alignSelf: 'center'
+    alignSelf: 'center',
+    resizeMode: 'contain',
   },
   dataContainer: {
-    width: '50%',
+    width: '30%',
     paddingHorizontal: 15,
-    paddingVertical: 10
+    paddingVertical: 10,
+    backgroundColor: '#ffffff',
+     // Removed @media query - handled by getDataContainerStyle function
+  },
+  sectionBox: {
+    backgroundColor: '#f5f6f7', // frost grey
+    borderRadius: 8,
+    padding: 16,
+    marginBottom: 20,
+    shadowColor: "#000",
+    shadowOffset: {
+      width: 6,
+      height: 8
+    },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 5,
   },
   fieldContainer: {
-    marginBottom: 20
+    marginBottom: 0,
+  },
+  fieldLabelContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 8,
   },
   fieldLabel: {
-    fontSize: 16,
-    fontWeight: 'bold',
-    marginBottom: 8,
-    color: '#333'
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#333',
   },
-  labelContainer: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    marginBottom: 10
-  },
-  tag: {
-    backgroundColor: '#e0e0e0',
-    borderRadius: 15,
-    paddingHorizontal: 10,
-    paddingVertical: 5,
-    margin: 3,
-    flexDirection: 'row',
-    alignItems: 'center'
-  },
-  tagText: {
-    marginRight: 5
-  },
-  addButton: {
-    backgroundColor: '#007AFF',
-    width: 36,
-    height: 36,
-    borderRadius: 18,
+  addCircleButton: {
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    backgroundColor: '#10B981',
     justifyContent: 'center',
     alignItems: 'center',
-    position: 'absolute',
-    right: 10,
-    bottom: 10
+  },
+  noteInput: {
+    borderWidth: 1,
+    borderColor: '#10B981',
+    borderRadius: 6,
+    padding: 12,
+    fontSize: 14,
+    backgroundColor: '#fff',
+    minHeight: 100,
+    textAlignVertical: 'top',
   },
   notesList: {
-    marginBottom: 10
+    marginTop: 12,
   },
   noteItem: {
     backgroundColor: '#f9f9f9',
-    borderRadius: 5,
-    padding: 10,
-    marginBottom: 10,
+    borderRadius: 6,
+    padding: 12,
+    marginBottom: 8,
     borderLeftWidth: 3,
-    borderLeftColor: '#007AFF'
+    borderLeftColor: '#10B981',
   },
   noteText: {
     fontSize: 14,
-    marginBottom: 5
+    marginBottom: 6,
+    color: '#333',
   },
   noteTimestamp: {
     fontSize: 12,
     color: '#888',
-    textAlign: 'right'
+    textAlign: 'right',
   },
-  noteInputContainer: {
-    position: 'relative',
-    marginBottom: 10,
+  addTaskInput: {
     borderWidth: 1,
-    borderColor: '#ccc',
-    borderRadius: 5
-  },
-  noteInput: {
-    padding: 10,
-    height: '100%',
-    paddingBottom: 40
-  },
-  resizeHandle: {
-    position: 'absolute',
-    bottom: 0,
-    left: 0,
-    right: 0,
-    height: 20,
-    justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: '#f0f0f0',
-    borderTopWidth: 1,
-    borderTopColor: '#ccc'
-  },
-  addTagButton: {
-    backgroundColor: '#007AFF',
-    borderRadius: 5,
-    paddingHorizontal: 10,
-    paddingVertical: 5,
-    marginLeft: 10
-  },
-  addTagButtonText: {
-    color: '#fff'
-  },
-  input: {
-    borderWidth: 1,
-    borderColor: '#ccc',
-    borderRadius: 5,
-    padding: 8,
-    marginBottom: 10
-  },
-  dateTimeInput: {
-    backgroundColor: '#f9f9f9',
+    borderColor: '#10B981',
+    borderRadius: 6,
     padding: 12,
-    borderRadius: 5,
-    marginBottom: 10
-  },
-  addTagContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 10
-  },
-  tagInput: {
-    borderWidth: 1,
-    borderColor: '#ccc',
-    borderRadius: 5,
-    padding: 8,
-    flex: 1
-  },
-  progressContainer: {
-    marginBottom: 15
-  },
-  progressLabel: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    marginBottom: 5
-  },
-  progressValueText: {
     fontSize: 14,
-    color: '#888'
-  },
-  progressBar: {
-    height: 6,
-    backgroundColor: '#e0e0e0',
-    borderRadius: 3
-  },
-  progressFill: {
-    height: '100%',
-    backgroundColor: '#007AFF',
-    borderRadius: 3
+    backgroundColor: '#fff',
+    marginBottom: 12,
   },
   tasksList: {
-    marginBottom: 10
+    marginBottom: 10,
   },
   taskItem: {
     flexDirection: 'row',
@@ -1108,131 +1315,281 @@ const styles = StyleSheet.create({
     paddingVertical: 8,
     borderBottomWidth: 1,
     borderBottomColor: '#e0e0e0',
-    marginBottom: 4
+    marginBottom: 4,
   },
   checkbox: {
     width: 20,
     height: 20,
     borderWidth: 2,
-    borderColor: '#007AFF',
+    borderColor: '#10B981',
     borderRadius: 4,
     marginRight: 10,
     justifyContent: 'center',
-    alignItems: 'center'
+    alignItems: 'center',
   },
   checkboxChecked: {
-    backgroundColor: '#007AFF'
+    backgroundColor: '#10B981',
   },
   taskText: {
     flex: 1,
-    fontSize: 14
+    fontSize: 14,
+    color: '#333',
   },
   taskTextCompleted: {
     textDecorationLine: 'line-through',
-    color: '#888'
+    color: '#888',
   },
   priorityContainer: {
     flexDirection: 'row',
-    marginLeft: 10
+    marginLeft: 10,
   },
   priorityButton: {
-    paddingHorizontal: 8,
-    paddingVertical: 3,
-    borderRadius: 3,
-    marginHorizontal: 2,
-    backgroundColor: '#f0f0f0'
-  },
-  priorityButtonActive: {
-    backgroundColor: '#007AFF'
-  },
-  priorityText: {
-    fontSize: 12,
-    color: '#333'
-  },
-  addTaskContainer: {
-    flexDirection: 'row',
+    width: 24,
+    height: 24,
+    borderRadius: 4,
+    justifyContent: 'center',
     alignItems: 'center',
-    marginBottom: 10,
-    position: 'relative'
+    marginHorizontal: 2,
+    backgroundColor: '#f0f0f0',
   },
-  addTaskInput: {
-    flex: 1,
-    borderWidth: 1,
-    borderColor: '#ccc',
-    borderRadius: 5,
-    padding: 8,
-    paddingRight: 50
+  priorityDot: {
+    width: 12,
+    height: 12,
+    borderRadius: 6,
   },
   buttonContainer: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
-    marginTop: 20,
-    marginBottom: 30
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginTop: 30,
+    marginBottom: 30,
+    padding: 16
   },
   saveButton: {
-    backgroundColor: '#007AFF',
-    paddingVertical: 12,
-    paddingHorizontal: 30,
-    borderRadius: 5,
+    backgroundColor: '#10B981',
+    paddingVertical: 16,
+    paddingHorizontal: 40,
+    borderRadius: 8,
     flex: 1,
-    marginRight: 10
-  },
-  cancelButton: {
-    backgroundColor: '#FF3B30',
-    paddingVertical: 12,
-    paddingHorizontal: 30,
-    borderRadius: 5,
-    flex: 1
-  },
-  buttonInner: {
-    flexDirection: 'row',
-    justifyContent: 'center',
-    alignItems: 'center'
-  },
-  buttonText: {
-    color: '#fff',
-    fontSize: 16,
-    fontWeight: 'bold',
-    marginLeft: 8
-  },
-  drawingToolsContainer: {
-    position: 'absolute',
-    top: 10,
-    right: 10,
-    backgroundColor: 'rgba(255, 255, 255, 0.8)',
-    padding: 5,
-    borderRadius: 5,
-    flexDirection: 'column',
+    marginRight: 15,
     alignItems: 'center',
     shadowColor: "#000",
     shadowOffset: {
       width: 0,
-      height: 2
+      height: 4
     },
-    shadowOpacity: 0.25,
-    shadowRadius: 3.84,
-    elevation: 5
+    shadowOpacity: 0.15,
+    shadowRadius: 3,
+    elevation: 5,
   },
-  toolButton: {
+  saveButtonText: {
+    color: '#fff',
+    fontSize: 18,
+    fontWeight: '600',
+  },
+  cancelButton: {
+    backgroundColor: '#E5E7EB',
+    paddingVertical: 16,
+    paddingHorizontal: 40,
+    borderRadius: 8,
+    flex: 1,
+    alignItems: 'center',
+    shadowColor: "#000",
+    shadowOffset: {
+      width: 0,
+      height: 4
+    },
+    shadowOpacity: 0.15,
+    shadowRadius: 3,
+    elevation: 5,
+  },
+  cancelButtonText: {
+    color: '#4B5563',
+    fontSize: 18,
+    fontWeight: '600',
+  },
+  drawControlsBar: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 10,
+  },
+  drawControlsSection: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  drawToolButton: {
     width: 36,
     height: 36,
     borderRadius: 18,
     justifyContent: 'center',
     alignItems: 'center',
     backgroundColor: '#f0f0f0',
-    marginVertical: 5
+    marginRight: 10,
   },
-  toolButtonActive: {
+  drawToolButtonActive: {
     backgroundColor: '#007AFF'
   },
-  colorButton: {
+  colorOptions: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  colorOption: {
     width: 30,
     height: 30,
     borderRadius: 15,
-    marginVertical: 5,
+    marginRight: 5,
     borderWidth: 2,
     borderColor: '#fff'
-  }
+  },
+  colorOptionSelected: {
+    borderColor: '#007AFF'
+  },
+  clearButton: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: '#f0f0f0',
+  },
+  imageWrapper: {
+    position: 'relative',
+    flex: 1,
+  },
+  formContainer: {
+    flex: 1,
+    borderLeftWidth: 1,
+    borderLeftColor: '#e0e0e0',
+    backgroundColor: '#fff',
+  },
+  formScroll: {
+    flex: 1,
+    padding: 16,
+  },
+  formGroup: {
+    marginBottom: 16,
+  },
+  label: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#333',
+    marginBottom: 8,
+  },
+  input: {
+    height: 42,
+    borderWidth: 1,
+    borderColor: '#e0e0e0',
+    borderRadius: 6,
+    paddingHorizontal: 12,
+    fontSize: 15,
+  },
+  datePickerButton: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    height: 42,
+    borderWidth: 1,
+    borderColor: '#e0e0e0',
+    borderRadius: 6,
+    paddingHorizontal: 12,
+  },
+  dateText: {
+    fontSize: 15,
+    color: '#333',
+  },
+  tagsContainer: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    marginBottom: 8,
+  },
+  tag: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#007AFF',
+    paddingVertical: 6,
+    paddingHorizontal: 10,
+    borderRadius: 16,
+    marginRight: 8,
+    marginBottom: 8,
+  },
+  tagText: {
+    color: '#fff',
+    fontSize: 14,
+    marginRight: 6,
+  },
+  removeTagButton: {
+    width: 16,
+    height: 16,
+    borderRadius: 8,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  addItemRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  itemInput: {
+    flex: 1,
+    height: 42,
+    borderWidth: 1,
+    borderColor: '#e0e0e0',
+    borderRadius: 6,
+    paddingHorizontal: 12,
+    fontSize: 15,
+    marginRight: 8,
+  },
+  addButton: {
+    width: 42,
+    height: 42,
+    borderRadius: 21,
+    backgroundColor: '#10B981',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  progressLabelRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 8,
+  },
+  progressPercentage: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#10B981',
+  },
+  progressBarContainer: {
+    height: 8,
+    backgroundColor: '#f0f0f0',
+    borderRadius: 4,
+    overflow: 'hidden',
+  },
+  progressBar: {
+    height: '100%',
+    backgroundColor: '#10B981',
+    borderRadius: 4,
+  },
+  imagePlaceholder: {
+    width: '100%',
+    height: '100%',
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: '#f0f0f0',
+  },
+  placeholderText: {
+    fontSize: 16,
+    color: '#666',
+    marginTop: 10,
+  },
+  debugText: {
+    position: 'absolute',
+    top: 50,
+    left: 10,
+    backgroundColor: 'rgba(0,0,0,0.5)',
+    color: 'white',
+    padding: 5,
+    borderRadius: 3,
+    fontSize: 12,
+  },
 });
 
 export default AnnotationsModal;

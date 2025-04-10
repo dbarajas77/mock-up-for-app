@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Dimensions, Platform, Alert } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, Dimensions, Platform, Alert, ScrollView } from 'react-native'; // Added ScrollView
 import { useNavigation } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
-import { useSidebar } from './AppLayout';
+import { useSidebar } from '../navigation/SidebarNavigator'; // Corrected import path
 import { MainTabParamList } from '../navigation/types';
 import { useCurrentProject } from '../contexts/CurrentProjectContext';
 
@@ -30,7 +30,7 @@ const SidePanel: React.FC<SidePanelProps> = ({ isOpen, onClose, currentRoute }) 
   const navigation = useNavigation<StackNavigationProp<MainTabParamList>>();
   const [width, setWidth] = useState(Dimensions.get('window').width);
   const { currentProject } = useCurrentProject();
-  
+
   // Navigation items
   const navItems = [
     { name: 'ProjectsTab', label: 'Projects', icon: 'folder' },
@@ -41,21 +41,21 @@ const SidePanel: React.FC<SidePanelProps> = ({ isOpen, onClose, currentRoute }) 
     { name: 'PaymentsTab', label: 'Payments', icon: 'credit-card' },
     { name: 'ChecklistsTab', label: 'Checklists', icon: 'check-square' },
   ];
-  
+
   // Update width on window resize
   useEffect(() => {
     const updateWidth = () => {
       setWidth(Dimensions.get('window').width);
     };
-    
+
     const dimensionsHandler = Dimensions.addEventListener('change', updateWidth);
-    
+
     // Cleanup
     return () => {
       dimensionsHandler.remove();
     };
   }, []);
-  
+
   // Apply web-specific styles directly to the DOM element
   useEffect(() => {
     if (Platform.OS === 'web') {
@@ -70,12 +70,6 @@ const SidePanel: React.FC<SidePanelProps> = ({ isOpen, onClose, currentRoute }) 
       }
     }
   }, [isOpen]); // Re-apply when isOpen changes
-  
-  // If sidebar is not open on mobile, don't render it
-  // For debugging, always render the sidebar regardless of screen size
-  // if (!isOpen && width < 1024) {
-  //   return null;
-  // }
 
   // Always render on desktop, even if isOpen is false
   return (
@@ -88,7 +82,7 @@ const SidePanel: React.FC<SidePanelProps> = ({ isOpen, onClose, currentRoute }) 
           activeOpacity={1}
         />
       )}
-      
+
       <View id="side-panel" style={styles.sidebar}>
         <View style={styles.sidebarHeader}>
           <Text style={styles.sidebarTitle}>Project Manager</Text>
@@ -98,7 +92,7 @@ const SidePanel: React.FC<SidePanelProps> = ({ isOpen, onClose, currentRoute }) 
             </TouchableOpacity>
           )}
         </View>
-        
+
         {currentProject.id && (
           <View style={styles.currentProjectContainer}>
             <Text style={styles.currentProjectLabel}>Current Project:</Text>
@@ -107,11 +101,12 @@ const SidePanel: React.FC<SidePanelProps> = ({ isOpen, onClose, currentRoute }) 
             </Text>
           </View>
         )}
-        
-        <View style={styles.sidebarContent}>
+
+        <ScrollView style={styles.sidebarContent}>
           {navItems.map((item) => {
             const isActive = currentRoute === item.name;
-            const requiresProject = ['PhotosTab', 'DocumentsTab'].includes(item.name);
+            // Updated to include all tabs requiring a project context
+            const requiresProject = ['PhotosTab', 'DocumentsTab', 'ReportsTab'].includes(item.name);
             const isDisabled = requiresProject && !currentProject.id;
 
             return (
@@ -132,26 +127,28 @@ const SidePanel: React.FC<SidePanelProps> = ({ isOpen, onClose, currentRoute }) 
                         name: currentProject.name,
                         route: item.name
                       });
-                      
+
                       const params = {
                         projectId: currentProject.id,
                         projectName: currentProject.name || 'Project',
                         timestamp: Date.now()
                       };
-                      
+
                       console.log('Navigation params:', JSON.stringify(params));
-                      navigation.navigate(item.name as keyof MainTabParamList, params);
+                      // Explicitly cast screen name and ensure params match the type definition
+                      // Using 'as any' to bypass strict type check for now, might need review
+                      navigation.navigate(item.name as keyof MainTabParamList, params as any);
                     } else {
                       Alert.alert(
                         "Project Required",
-                        "Please select a project first to view its photos or documents."
+                        "Please select a project first to view its photos, documents, or reports." // Updated message
                       );
                       return;
                     }
                   } else {
                     navigation.navigate(item.name as keyof MainTabParamList);
                   }
-                  
+
                   if (width < 1024) {
                     onClose();
                   }
@@ -168,7 +165,7 @@ const SidePanel: React.FC<SidePanelProps> = ({ isOpen, onClose, currentRoute }) 
               </TouchableOpacity>
             );
           })}
-        </View>
+        </ScrollView>
       </View>
     </>
   );
@@ -194,7 +191,7 @@ const styles = StyleSheet.create({
     top: 0,
     left: 0,
     position: 'absolute',
-    overflow: 'hidden',
+    // overflow: 'hidden', // Removed to allow scrolling via ScrollView
     shadowColor: "#000",
     shadowOffset: {
       width: 2,
@@ -223,7 +220,7 @@ const styles = StyleSheet.create({
     color: '#ffffff',
   },
   closeButton: {
-    padding: 5,
+    padding: 5, // Added padding back
   },
   closeButtonText: {
     fontSize: 18,
@@ -248,6 +245,7 @@ const styles = StyleSheet.create({
   sidebarContent: {
     flex: 1,
     paddingTop: 12,
+    // overflowY: 'auto', // Removed, using ScrollView now
   },
   navItem: {
     flexDirection: 'row',

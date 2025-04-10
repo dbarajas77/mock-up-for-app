@@ -3,6 +3,21 @@ import { View, Text, StyleSheet, ScrollView, ActivityIndicator, TouchableOpacity
 import { Card, ProgressBar } from '../../../../components/ui';
 import { useProject } from '../../../../contexts/ProjectContext'; // Import the hook
 import { theme } from '../../../../theme'; // Import theme for styling
+import { Feather } from '@expo/vector-icons';
+
+// Define colors to match the settings page
+const COLORS = {
+  headerText: '#111827',
+  bodyText: '#4B5563',
+  labelText: '#6B7280',
+  green: '#10B981',
+  lightGreen: 'rgba(16, 185, 129, 0.1)',
+  background: '#F9FAFB',
+  cardBackground: '#FFFFFF',
+  cardBorder: '#10B981',
+  sectionBackground: 'rgba(243, 244, 246, 0.7)',
+  iconBackground: 'rgba(16, 185, 129, 0.1)',
+};
 
 // Keep ActivityItem type if needed for future activity feed
 // type ActivityItem = {
@@ -22,7 +37,7 @@ export const ProjectDetailsTab = () => {
   if (isLoading) {
     return (
       <View style={styles.centeredContainer}>
-        <ActivityIndicator size="large" color={theme.colors.primary.main} />
+        <ActivityIndicator size="large" color={COLORS.green} />
       </View>
     );
   }
@@ -51,88 +66,113 @@ export const ProjectDetailsTab = () => {
   // --- Render actual project data --- 
 
   const renderOverviewCard = () => (
-    <View style={styles.card} className="card">
-      <Text style={styles.cardTitle} className="card-title">Project Overview</Text>
-      <Text style={styles.description}>{project.description || 'No description provided.'}</Text>
+    <View style={styles.card}>
+      <View style={styles.cardHeader}>
+        <View style={styles.iconContainer}>
+          <Feather name="file-text" size={20} color={COLORS.green} />
+        </View>
+        <Text style={styles.cardTitle}>Project Overview</Text>
+      </View>
+      <View style={styles.cardContent}>
+        <Text style={styles.description}>{project.description || 'No description provided.'}</Text>
+      </View>
     </View>
   );
 
   const renderDetailsCard = () => (
-    <View style={styles.card} className="card">
-      <Text style={styles.cardTitle} className="card-title">Project Details</Text>
-      
-      <View style={styles.detailItem} className="detail-item">
-        <Text style={styles.detailKey} className="detail-key">Status:</Text>
-        <Text style={styles.detailValue} className="detail-value">{project.status || 'N/A'}</Text>
+    <View style={styles.card}>
+      <View style={styles.cardHeader}>
+        <View style={styles.iconContainer}>
+          <Feather name="info" size={20} color={COLORS.green} />
+        </View>
+        <Text style={styles.cardTitle}>Project Details</Text>
       </View>
-      
-      <View style={styles.detailItem} className="detail-item">
-        <Text style={styles.detailKey} className="detail-key">Created:</Text>
-        <Text style={styles.detailValue} className="detail-value">{
-          project.created_at ? new Date(project.created_at).toLocaleDateString() : 'N/A'
-        }</Text>
-      </View>
-      
-      <View style={styles.detailItem} className="detail-item">
-        <Text style={styles.detailKey} className="detail-key">Priority:</Text>
-        <Text style={styles.detailValue} className="detail-value">{project.priority || 'N/A'}</Text>
-      </View>
-      
-      <View style={styles.detailItem} className="detail-item">
-        <Text style={styles.detailKey} className="detail-key">Timeline:</Text>
-        <Text style={styles.detailValue} className="detail-value">
-          {project.start_date ? new Date(project.start_date).toLocaleDateString() : 'N/A'} - 
-          {project.end_date ? new Date(project.end_date).toLocaleDateString() : 'N/A'}
-        </Text>
+      <View style={styles.cardContent}>
+        <View style={styles.detailItem}>
+          <Text style={styles.detailKey}>Status:</Text>
+          <Text style={styles.detailValue}>{project.status || 'N/A'}</Text>
+        </View>
+        
+        <View style={styles.detailItem}>
+          <Text style={styles.detailKey}>Created:</Text>
+          <Text style={styles.detailValue}>{
+            project.created_at ? new Date(project.created_at).toLocaleDateString() : 'N/A'
+          }</Text>
+        </View>
+        
+        <View style={styles.detailItem}>
+          <Text style={styles.detailKey}>Priority:</Text>
+          <Text style={styles.detailValue}>{project.priority || 'N/A'}</Text>
+        </View>
+        
+        <View style={styles.detailItem}>
+          <Text style={styles.detailKey}>Timeline:</Text>
+          <Text style={styles.detailValue}>
+            {project.start_date ? new Date(project.start_date).toLocaleDateString() : 'N/A'} - 
+            {project.end_date ? new Date(project.end_date).toLocaleDateString() : 'N/A'}
+          </Text>
+        </View>
       </View>
     </View>
   );
 
   const renderLocationCard = () => (
-    <View style={styles.card} className="card">
-      <Text style={styles.cardTitle} className="card-title">Location</Text>
-      
-      <View style={styles.detailItem} className="detail-item">
-        <Text style={styles.detailKey} className="detail-key">Address:</Text>
-        <Text style={styles.detailValue} className="detail-value">{project.address1 || 'N/A'}</Text>
-      </View>
-      
-      {project.address2 && (
-        <View style={styles.detailItem} className="detail-item">
-          <Text style={styles.detailKey} className="detail-key"></Text>
-          <Text style={styles.detailValue} className="detail-value">{project.address2}</Text>
+    <View style={styles.card}>
+      <View style={styles.cardHeader}>
+        <View style={styles.iconContainer}>
+          <Feather name="map-pin" size={20} color={COLORS.green} />
         </View>
-      )}
-      
-      <View style={styles.detailItem} className="detail-item">
-        <Text style={styles.detailKey} className="detail-key">City/State:</Text>
-        <Text style={styles.detailValue} className="detail-value">
-          {project.city ? `${project.city}, ` : ''}
-          {project.state || 'N/A'} 
-          {project.zip ? ` ${project.zip}` : ''}
-        </Text>
+        <Text style={styles.cardTitle}>Location</Text>
+      </View>
+      <View style={styles.cardContent}>
+        <View style={styles.detailItem}>
+          <Text style={styles.detailKey}>Address:</Text>
+          <Text style={styles.detailValue}>{project.address1 || 'N/A'}</Text>
+        </View>
+        
+        {project.address2 && (
+          <View style={styles.detailItem}>
+            <Text style={styles.detailKey}></Text>
+            <Text style={styles.detailValue}>{project.address2}</Text>
+          </View>
+        )}
+        
+        <View style={styles.detailItem}>
+          <Text style={styles.detailKey}>City/State:</Text>
+          <Text style={styles.detailValue}>
+            {project.city ? `${project.city}, ` : ''}
+            {project.state || 'N/A'} 
+            {project.zip ? ` ${project.zip}` : ''}
+          </Text>
+        </View>
       </View>
     </View>
   );
 
   const renderContactCard = () => (
-    <View style={styles.card} className="card">
-      <Text style={styles.cardTitle} className="card-title">Contact Information</Text>
-      
-      <View style={styles.detailItem} className="detail-item">
-        <Text style={styles.detailKey} className="detail-key">Name:</Text>
-        <Text style={styles.detailValue} className="detail-value">{project.contact_name || 'N/A'}</Text>
+    <View style={styles.card}>
+      <View style={styles.cardHeader}>
+        <View style={styles.iconContainer}>
+          <Feather name="user" size={20} color={COLORS.green} />
+        </View>
+        <Text style={styles.cardTitle}>Contact Information</Text>
       </View>
-      
-      <View style={styles.detailItem} className="detail-item">
-        <Text style={styles.detailKey} className="detail-key">Phone:</Text>
-        <Text style={styles.detailValue} className="detail-value">{project.contact_phone || 'N/A'}</Text>
+      <View style={styles.cardContent}>
+        <View style={styles.detailItem}>
+          <Text style={styles.detailKey}>Name:</Text>
+          <Text style={styles.detailValue}>{project.contact_name || 'N/A'}</Text>
+        </View>
+        
+        <View style={styles.detailItem}>
+          <Text style={styles.detailKey}>Phone:</Text>
+          <Text style={styles.detailValue}>{project.contact_phone || 'N/A'}</Text>
+        </View>
       </View>
     </View>
   );
 
   return (
-    <ScrollView style={styles.container} className="tab-content-area">
+    <ScrollView style={styles.container}>
       {renderOverviewCard()}
       {renderDetailsCard()}
       {renderLocationCard()}
@@ -144,8 +184,8 @@ export const ProjectDetailsTab = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    padding: 25,
-    backgroundColor: '#F9FAFB',
+    padding: 16,
+    backgroundColor: COLORS.background,
   },
   centeredContainer: {
     flex: 1,
@@ -154,13 +194,13 @@ const styles = StyleSheet.create({
     padding: 20,
   },
   errorText: {
-    color: theme.colors.error.main,
+    color: '#EF4444',
     fontSize: 16,
     textAlign: 'center',
     marginBottom: 16,
   },
   retryButton: {
-    backgroundColor: theme.colors.primary.main,
+    backgroundColor: COLORS.green,
     paddingVertical: 10,
     paddingHorizontal: 20,
     borderRadius: 8,
@@ -171,49 +211,65 @@ const styles = StyleSheet.create({
     fontWeight: '500',
   },
   emptyText: {
-    color: theme.colors.text.secondary,
+    color: COLORS.labelText,
     fontSize: 16,
   },
   card: {
-    backgroundColor: 'rgba(240, 240, 240, 0.8)',
-    borderRadius: 6,
-    padding: 20,
-    marginBottom: 20,
-    borderWidth: 2,
-    borderColor: '#00CC66',
+    backgroundColor: COLORS.cardBackground,
+    borderRadius: 16,
+    marginBottom: 16,
+    overflow: 'hidden',
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.07,
-    shadowRadius: 3,
-    elevation: 2,
+    shadowOffset: { width: 0, height: 5 },
+    shadowOpacity: 0.1,
+    shadowRadius: 10,
+    elevation: 3,
+    borderWidth: 1,
+    borderColor: COLORS.cardBorder,
+  },
+  cardHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: 'rgba(16, 185, 129, 0.3)',
+  },
+  iconContainer: {
+    width: 40,
+    height: 40,
+    borderRadius: 8,
+    backgroundColor: COLORS.iconBackground,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 12,
+  },
+  cardContent: {
+    padding: 16,
+    backgroundColor: COLORS.sectionBackground,
   },
   cardTitle: {
     fontSize: 18,
     fontWeight: '600',
-    color: '#001532',
-    marginBottom: 15,
+    color: COLORS.headerText,
   },
   description: {
     fontSize: 14,
-    color: '#1f2937',
-    marginBottom: 10,
+    color: COLORS.bodyText,
     lineHeight: 20,
   },
   detailItem: {
-    display: 'flex',
     flexDirection: 'row',
-    marginBottom: 10,
-    fontSize: 14,
+    marginBottom: 12,
   },
   detailKey: {
-    color: '#6B7280',
+    color: COLORS.labelText,
     width: 100,
     flexShrink: 0,
     fontWeight: '500',
     fontSize: 14,
   },
   detailValue: {
-    color: '#1f2937',
+    color: COLORS.bodyText,
     fontWeight: '500',
     fontSize: 14,
     flex: 1,

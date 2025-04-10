@@ -2,10 +2,23 @@ import React from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, SafeAreaView } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import { Ionicons } from '@expo/vector-icons';
+import { Ionicons, Feather } from '@expo/vector-icons';
 import { useProject } from '../../../../contexts/ProjectContext';
 import { RootStackParamList } from '../../../../navigation/types';
-import { theme } from '../../../../theme';
+
+// Define colors to match the settings page
+const COLORS = {
+  headerText: '#111827',
+  bodyText: '#4B5563',
+  labelText: '#6B7280',
+  green: '#10B981',
+  lightGreen: 'rgba(16, 185, 129, 0.1)',
+  background: '#F9FAFB',
+  cardBackground: '#FFFFFF',
+  cardBorder: '#10B981',
+  sectionBackground: 'rgba(243, 244, 246, 0.7)',
+  iconBackground: 'rgba(16, 185, 129, 0.1)',
+};
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
 
@@ -17,27 +30,45 @@ const ProjectHeader = () => {
     navigation.goBack();
   };
 
+  const getStatusColor = (status?: string) => {
+    if (!status) return { bg: COLORS.sectionBackground, text: COLORS.labelText };
+    
+    switch (status.toLowerCase()) {
+      case 'active':
+        return { bg: 'rgba(59, 130, 246, 0.1)', text: '#3B82F6' };
+      case 'completed':
+        return { bg: 'rgba(16, 185, 129, 0.1)', text: '#10B981' };
+      case 'archived':
+        return { bg: 'rgba(107, 114, 128, 0.1)', text: '#6B7280' };
+      case 'on-hold':
+        return { bg: 'rgba(239, 68, 68, 0.1)', text: '#EF4444' };
+      default:
+        return { bg: COLORS.sectionBackground, text: COLORS.labelText };
+    }
+  };
+
+  const statusColors = project?.status ? getStatusColor(project.status) : { bg: COLORS.sectionBackground, text: COLORS.labelText };
+
   return (
-    <SafeAreaView style={styles.safeArea} className="content-header">
+    <SafeAreaView style={styles.safeArea}>
       <View style={styles.container}>
         <View style={styles.headerRow}>
-          <View style={styles.titleArea} className="title-area">
+          <View style={styles.titleArea}>
             <TouchableOpacity
               style={styles.backButton}
               onPress={handleBackPress}
-              className="back-button"
             >
-              <Ionicons name="chevron-back" size={28} color="#6B7280" />
+              <Feather name="chevron-left" size={24} color={COLORS.green} />
             </TouchableOpacity>
             
-            <Text style={styles.title} numberOfLines={1} className="page-title">
+            <Text style={styles.title} numberOfLines={1}>
               {isLoading ? 'Loading...' : project?.name || 'Project Details'}
             </Text>
           </View>
           
           {project && (
-            <View style={styles.statusBadge} className="status-chip">
-              <Text style={styles.statusText}>{project.status}</Text>
+            <View style={[styles.statusBadge, { backgroundColor: statusColors.bg }]}>
+              <Text style={[styles.statusText, { color: statusColors.text }]}>{project.status}</Text>
             </View>
           )}
         </View>
@@ -46,32 +77,17 @@ const ProjectHeader = () => {
   );
 };
 
-const getStatusColor = (status: string) => {
-  switch (status.toLowerCase()) {
-    case 'active':
-      return theme.colors.primary.light;
-    case 'completed':
-      return theme.colors.success;
-    case 'archived':
-      return theme.colors.neutral.dark;
-    case 'on-hold':
-      return theme.colors.error;
-    default:
-      return theme.colors.neutral.main;
-  }
-};
-
 const styles = StyleSheet.create({
   safeArea: {
-    backgroundColor: '#fff',
+    backgroundColor: COLORS.cardBackground,
     flexShrink: 0, // Prevent header from shrinking
   },
   container: {
-    backgroundColor: '#fff',
+    backgroundColor: COLORS.cardBackground,
     paddingVertical: 18,
-    paddingHorizontal: 25,
+    paddingHorizontal: 16,
     borderBottomWidth: 1,
-    borderBottomColor: '#E5E7EB',
+    borderBottomColor: 'rgba(16, 185, 129, 0.3)',
   },
   headerRow: {
     flexDirection: 'row',
@@ -81,27 +97,32 @@ const styles = StyleSheet.create({
   titleArea: {
     flexDirection: 'row',
     alignItems: 'center',
+    flex: 1,
   },
   backButton: {
     flexDirection: 'row',
     alignItems: 'center',
     marginRight: 15,
+    width: 40,
+    height: 40,
+    borderRadius: 8,
+    backgroundColor: COLORS.iconBackground,
+    justifyContent: 'center',
   },
   title: {
     fontSize: 20,
     fontWeight: '600',
-    color: '#001532', // Dark blue
+    color: COLORS.headerText,
+    flex: 1,
   },
   statusBadge: {
-    backgroundColor: '#E6F0FF', // Light blue background
     paddingHorizontal: 12,
-    paddingVertical: 4,
-    borderRadius: 12, // Pill shape
+    paddingVertical: 6,
+    borderRadius: 8,
   },
   statusText: {
     fontSize: 14,
     fontWeight: '500',
-    color: '#001532', // Dark blue text
   },
 });
 

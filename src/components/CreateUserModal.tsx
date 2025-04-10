@@ -52,12 +52,6 @@ const CreateUserModal: React.FC<CreateUserModalProps> = ({ visible, onClose, onS
 
       if (profileError) {
         console.error('Error creating profile:', profileError);
-        
-        // Check for specific RLS error
-        if (profileError.message?.includes('policy') || profileError.message?.includes('permission denied')) {
-          throw new Error('Permission denied. Please contact an administrator.');
-        }
-        
         throw profileError;
       }
 
@@ -74,7 +68,7 @@ const CreateUserModal: React.FC<CreateUserModalProps> = ({ visible, onClose, onS
       Alert.alert('Success', 'User created successfully!');
     } catch (error) {
       console.error('Error creating user:', error);
-      Alert.alert('Error', error.message || 'Failed to create user. Please try again.');
+      Alert.alert('Error', 'Failed to create user. Please try again.');
     } finally {
       setIsLoading(false);
     }

@@ -153,7 +153,7 @@ const styles = StyleSheet.create({
     fontWeight: 'bold'
   },
   createButton: {
-    backgroundColor: '#1a237e',
+    backgroundColor: '#071440',
     paddingHorizontal: 16,
     paddingVertical: 8,
     borderRadius: 4
@@ -175,7 +175,7 @@ const styles = StyleSheet.create({
     marginBottom: 16
   },
   retryButton: {
-    backgroundColor: '#1a237e',
+    backgroundColor: '#071440',
     paddingHorizontal: 24,
     paddingVertical: 12,
     borderRadius: 4
@@ -212,7 +212,7 @@ const styles = StyleSheet.create({
     textAlign: 'center'
   },
   createButtonLarge: {
-    backgroundColor: '#1a237e',
+    backgroundColor: '#071440',
     paddingHorizontal: 32,
     paddingVertical: 16,
     borderRadius: 8,

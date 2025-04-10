@@ -13,39 +13,16 @@ interface ProjectCardProps {
 const ProjectCard = ({ project, onPress, onDelete }: ProjectCardProps) => {
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   
-  // Function to determine badge color based on status
-  const getStatusBadgeColor = (status: string) => {
-    switch (status.toLowerCase()) {
-      case 'active':
-        return styles.statusBadgeActive;
-      case 'pending':
-        return styles.statusBadgePending;
-      case 'completed':
-        return styles.statusBadgeCompleted;
-      case 'archived':
-        return styles.statusBadgeArchived;
-      default:
-        return styles.statusBadgeDefault;
-    }
-  };
-
-  // Function to determine badge color based on priority
-  const getPriorityBadgeColor = (priority: string) => {
-    switch (priority.toLowerCase()) {
-      case 'high':
-        return styles.priorityBadgeHigh;
-      case 'medium':
-        return styles.priorityBadgeMedium;
-      case 'low':
-        return styles.priorityBadgeLow;
-      default:
-        return styles.priorityBadgeDefault;
-    }
+  // Format date to readable format
+  const formatDate = (dateString?: string) => {
+    if (!dateString) return 'N/A';
+    const date = new Date(dateString);
+    return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
   };
 
   // Calculate project timeline and percentage complete
   const calculateTimeline = () => {
-    if (!project.start_date || !project.end_date) return { percentage: 0, timeLeft: 'N/A' };
+    if (!project.start_date || !project.end_date) return { percentage: 0, daysLeft: 0 };
     
     const start = new Date(project.start_date);
     const end = new Date(project.end_date);
@@ -54,25 +31,85 @@ const ProjectCard = ({ project, onPress, onDelete }: ProjectCardProps) => {
     const totalDuration = end.getTime() - start.getTime();
     const elapsedDuration = today.getTime() - start.getTime();
     
-    if (elapsedDuration < 0) return { percentage: 0, timeLeft: 'Not started' };
-    if (elapsedDuration > totalDuration) return { percentage: 100, timeLeft: 'Complete' };
+    if (elapsedDuration < 0) return { percentage: 0, daysLeft: Math.ceil((end.getTime() - today.getTime()) / (1000 * 60 * 60 * 24)) };
+    if (elapsedDuration > totalDuration) return { percentage: 100, daysLeft: 0 };
     
     const percentage = Math.floor((elapsedDuration / totalDuration) * 100);
     
-    // Calculate time left
+    // Calculate days left
     const daysLeft = Math.ceil((end.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
-    const timeLeft = daysLeft <= 0 ? 'Due today' : `${daysLeft} days left`;
     
-    return { percentage, timeLeft };
+    return { percentage, daysLeft };
   };
   
-  const { percentage, timeLeft } = calculateTimeline();
+  const { percentage, daysLeft } = calculateTimeline();
 
-  // Format date to readable format
-  const formatDate = (dateString?: string) => {
-    if (!dateString) return 'N/A';
-    const date = new Date(dateString);
-    return date.toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' });
+  // Get status letter
+  const getStatusLetter = () => {
+    if (!project.status) return 'A';
+    return project.status.charAt(0).toUpperCase();
+  };
+
+  // Get priority letter
+  const getPriorityLetter = () => {
+    if (!project.priority) return 'M';
+    return project.priority.charAt(0).toUpperCase();
+  };
+
+  // Get status color
+  const getStatusColor = () => {
+    switch (project.status?.toLowerCase()) {
+      case 'active':
+        return '#3B82F6'; // Blue
+      case 'completed':
+        return '#10B981'; // Green
+      case 'archived':
+        return '#6B7280'; // Gray
+      default:
+        return '#3B82F6'; // Default blue
+    }
+  };
+
+  // Get priority color
+  const getPriorityColor = () => {
+    switch (project.priority?.toLowerCase()) {
+      case 'high':
+        return '#EF4444'; // Red
+      case 'medium':
+        return '#F59E0B'; // Orange
+      case 'low':
+        return '#3B82F6'; // Blue
+      default:
+        return '#F59E0B'; // Default orange
+    }
+  };
+
+  // Get status background color
+  const getStatusBgColor = () => {
+    switch (project.status?.toLowerCase()) {
+      case 'active':
+        return 'rgba(59, 130, 246, 0.1)'; // Light blue
+      case 'completed':
+        return 'rgba(16, 185, 129, 0.1)'; // Light green
+      case 'archived':
+        return 'rgba(107, 114, 128, 0.1)'; // Light gray
+      default:
+        return 'rgba(59, 130, 246, 0.1)'; // Default light blue
+    }
+  };
+
+  // Get priority background color
+  const getPriorityBgColor = () => {
+    switch (project.priority?.toLowerCase()) {
+      case 'high':
+        return 'rgba(239, 68, 68, 0.1)'; // Light red
+      case 'medium':
+        return 'rgba(245, 158, 11, 0.1)'; // Light orange
+      case 'low':
+        return 'rgba(59, 130, 246, 0.1)'; // Light blue
+      default:
+        return 'rgba(245, 158, 11, 0.1)'; // Default light orange
+    }
   };
 
   // Handle delete confirmation
@@ -120,69 +157,87 @@ const ProjectCard = ({ project, onPress, onDelete }: ProjectCardProps) => {
 
   return (
     <>
-      <TouchableOpacity
-        style={styles.container}
+      <TouchableOpacity 
+        style={styles.projectCard}
         onPress={() => onPress && onPress(project.id)}
         activeOpacity={0.7}
       >
-        {/* Delete button in top right */}
-        <TouchableOpacity
-          style={styles.deleteButton}
-          onPress={() => setShowDeleteConfirm(true)}
-        >
-          <Feather name="trash-2" size={16} color="#e74c3c" />
-        </TouchableOpacity>
-        
-        <View style={styles.header}>
-          <Text style={styles.title} numberOfLines={1}>{project.name}</Text>
+        {/* Project Title and Delete button */}
+        <View style={styles.cardHeader}>
+          <View>
+            <Text style={styles.projectTitle}>{project.name}</Text>
+            <Text style={styles.projectDescription} numberOfLines={2}>
+              {project.description || 'No description available'}
+            </Text>
+          </View>
+          <View style={styles.cardActions}>
+            <TouchableOpacity 
+              style={styles.actionButton}
+              onPress={(e) => {
+                e.stopPropagation();
+                setShowDeleteConfirm(true);
+              }}
+            >
+              <Feather name="trash-2" size={16} color="#6B7280" />
+            </TouchableOpacity>
+          </View>
         </View>
-        
-        <Text style={styles.description} numberOfLines={3}>
-          {project.description || 'No description available'}
-        </Text>
-        
-        <View style={styles.detailsRow}>
-          {/* Status badge moved to details row */}
-          <View style={styles.detailItem}>
-            <Text style={styles.detailLabel}>Status:</Text>
-            <View style={[styles.statusBadge, getStatusBadgeColor(project.status)]}>
-              <Text style={styles.statusText}>
-                {project.status.charAt(0).toUpperCase() + project.status.slice(1)}
-              </Text>
+
+        {/* Status, Priority, and Date Range Boxes */}
+        <View style={styles.infoBoxesContainer}>
+          <View style={[styles.infoBox, { backgroundColor: getStatusBgColor() }]}>
+            <View style={[styles.letterBox, { backgroundColor: getStatusColor() }]}>
+              <Text style={styles.letterBoxText}>{getStatusLetter()}</Text>
             </View>
+            <Text style={[styles.infoBoxText, { color: getStatusColor() }]}>
+              {project.status?.charAt(0).toUpperCase() + project.status?.slice(1) || 'Active'}
+            </Text>
           </View>
           
-          <View style={styles.detailItem}>
-            <Text style={styles.detailLabel}>Priority:</Text>
-            <View style={[styles.priorityBadge, getPriorityBadgeColor(project.priority)]}>
-              <Text style={[styles.priorityText, getPriorityBadgeColor(project.priority)]}>
-                {project.priority.charAt(0).toUpperCase() + project.priority.slice(1)}
-              </Text>
+          <View style={[styles.infoBox, { backgroundColor: getPriorityBgColor() }]}>
+            <View style={[styles.letterBox, { backgroundColor: getPriorityColor() }]}>
+              <Text style={styles.letterBoxText}>{getPriorityLetter()}</Text>
             </View>
+            <Text style={[styles.infoBoxText, { color: getPriorityColor() }]}>
+              {project.priority?.charAt(0).toUpperCase() + project.priority?.slice(1) || 'Medium'}
+            </Text>
           </View>
           
-          <View style={styles.detailItem}>
-            <Text style={styles.detailLabel}>Timeline:</Text>
-            <Text style={styles.detailValue}>
+          <View style={styles.infoBox}>
+            <View style={styles.iconBox}>
+              <Feather name="calendar" size={14} color="#6B7280" />
+            </View>
+            <Text style={styles.dateRangeText}>
               {formatDate(project.start_date)} - {formatDate(project.end_date)}
             </Text>
           </View>
         </View>
-        
-        <View style={styles.progressContainer}>
+
+        {/* Progress Section */}
+        <View style={styles.progressSection}>
           <View style={styles.progressHeader}>
-            <Text style={styles.progressLabel}>Progress</Text>
-            <Text style={styles.progressValue}>{percentage}%</Text>
+            <View style={styles.progressTitle}>
+              <Feather name="bar-chart-2" size={16} color="#6B7280" />
+              <Text style={styles.progressTitleText}>Project Progress</Text>
+            </View>
+            <Text style={[styles.progressPercentage, { color: '#00CC66' }]}>{percentage}%</Text>
           </View>
-          <View style={styles.progressBarBackground}>
+
+          <View style={styles.progressBarContainer}>
             <View 
               style={[
                 styles.progressBarFill, 
-                { width: (percentage / 100) * 100 + '%' }
+                { width: `${percentage}%`, backgroundColor: '#00CC66' }
               ]} 
             />
           </View>
-          <Text style={styles.timeLeft}>{timeLeft}</Text>
+
+          <View style={styles.progressDateInfo}>
+            <Text style={styles.progressDate}>{formatDate(project.start_date)}</Text>
+            <Text style={styles.progressDate}>{formatDate(project.end_date)}</Text>
+          </View>
+
+          <Text style={styles.daysLeftText}>{daysLeft} days left</Text>
         </View>
       </TouchableOpacity>
 
@@ -220,150 +275,146 @@ const ProjectCard = ({ project, onPress, onDelete }: ProjectCardProps) => {
 };
 
 const styles = StyleSheet.create({
-  container: {
-    backgroundColor: 'rgba(240, 240, 240, 0.8)', // Light grey frosted background
-    borderRadius: 6, // Consistent border radius
-    padding: 20, // Increased padding
+  projectCard: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 16,
+    overflow: 'hidden',
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 3 },
-    shadowOpacity: 0.15,
-    shadowRadius: 6,
+    shadowOffset: { width: 0, height: 5 },
+    shadowOpacity: 0.1,
+    shadowRadius: 10,
     elevation: 3,
-    position: 'relative',
-    borderWidth: 2,
-    borderColor: '#00CC66', // Green border
-    backdropFilter: 'blur(5px)', // Frosted effect (works on web)
-    WebkitBackdropFilter: 'blur(5px)', // For Safari support
+    marginBottom: 20,
   },
-  deleteButton: {
-    position: 'absolute',
-    top: 12, // Adjusted for new padding
-    right: 12, // Adjusted for new padding
-    padding: 8,
-    borderRadius: 6, // Consistent border radius
-    backgroundColor: 'rgba(255, 240, 240, 0.9)',
-    zIndex: 10,
-  },
-  header: {
-    marginBottom: 8,
-    paddingRight: 32, // Make room for delete button
-  },
-  title: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    color: '#333',
-  },
-  statusBadge: {
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-    borderRadius: 12, // Rounded corners for status pill
-    marginLeft: 6, // Slightly more margin
-    backgroundColor: '#E6F0FF', // Light blue background
-  },
-  statusBadgeActive: {
-    backgroundColor: '#E6F0FF', // Light blue
-  },
-  statusBadgePending: {
-    backgroundColor: '#E6F0FF', // Light blue
-  },
-  statusBadgeCompleted: {
-    backgroundColor: '#E6F0FF', // Light blue
-  },
-  statusBadgeArchived: {
-    backgroundColor: '#E6F0FF', // Light blue
-  },
-  statusBadgeDefault: {
-    backgroundColor: '#E6F0FF', // Light blue
-  },
-  statusText: {
-    color: '#001532', // Dark blue text
-    fontSize: 12,
-    fontWeight: '500',
-  },
-  description: {
-    fontSize: 14,
-    color: '#666',
-    marginBottom: 12,
-    minHeight: 60,
-  },
-  detailsRow: {
+  cardHeader: {
     flexDirection: 'row',
-    marginBottom: 20, // Increased margin
-    flexWrap: 'wrap',
+    justifyContent: 'space-between',
+    backgroundColor: 'rgba(16, 185, 129, 0.1)', // Light frosted green
+    padding: 20,
   },
-  detailItem: {
+  projectTitle: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: '#111827',
+    marginBottom: 4,
+  },
+  projectDescription: {
+    fontSize: 14,
+    color: '#6B7280',
+    lineHeight: 20,
+    maxWidth: '90%',
+  },
+  cardActions: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+  },
+  actionButton: {
+    width: 30,
+    height: 30,
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderRadius: 4,
+    backgroundColor: 'rgba(255, 255, 255, 0.5)',
+  },
+  infoBoxesContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    padding: 15,
+  },
+  infoBox: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginRight: 20, // Increased margin
-    marginBottom: 10, // Increased margin
+    backgroundColor: '#F3F4F6',
+    paddingHorizontal: 15,
+    paddingVertical: 10,
+    borderRadius: 8,
+    flex: 1,
+    marginHorizontal: 5,
+    justifyContent: 'flex-start',
   },
-  detailLabel: {
+  letterBox: {
+    width: 24,
+    height: 24,
+    borderRadius: 6,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 10,
+  },
+  letterBoxText: {
+    color: '#FFFFFF',
     fontSize: 12,
-    color: '#888',
-    marginRight: 4,
+    fontWeight: '700',
   },
-  detailValue: {
-    fontSize: 12,
-    color: '#333',
+  iconBox: {
+    width: 24,
+    height: 24,
+    borderRadius: 6,
+    backgroundColor: 'rgba(107, 114, 128, 0.1)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 10,
   },
-  priorityBadge: {
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-    borderRadius: 12, // Rounded corners
-    borderWidth: 1,
-  },
-  priorityBadgeHigh: {
-    borderColor: '#e74c3c',
-  },
-  priorityBadgeMedium: {
-    borderColor: '#f39c12',
-  },
-  priorityBadgeLow: {
-    borderColor: '#2ecc71',
-  },
-  priorityBadgeDefault: {
-    borderColor: '#95a5a6',
-  },
-  priorityText: {
-    fontSize: 12,
+  infoBoxText: {
+    fontSize: 14,
     fontWeight: '500',
+    textAlign: 'left',
   },
-  progressContainer: {
-    marginTop: 8,
+  calendarIcon: {
+    marginRight: 5,
+  },
+  dateRangeText: {
+    fontSize: 14,
+    color: '#6B7280',
+    textAlign: 'left',
+  },
+  progressSection: {
+    padding: 15,
   },
   progressHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    marginBottom: 4,
+    alignItems: 'center',
+    marginBottom: 10,
   },
-  progressLabel: {
-    fontSize: 12,
-    color: '#888',
+  progressTitle: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
   },
-  progressValue: {
-    fontSize: 12,
-    color: '#333',
-    fontWeight: '500'
+  progressTitleText: {
+    fontSize: 14,
+    fontWeight: '500',
+    color: '#6B7280',
   },
-  progressBarBackground: {
-    height: 4,
-    backgroundColor: '#f5f5f5',
-    borderRadius: 2,
-    marginVertical: 4,
-    overflow: 'hidden'
+  progressPercentage: {
+    fontSize: 16,
+    fontWeight: '700',
+  },
+  progressBarContainer: {
+    height: 8,
+    backgroundColor: '#E5E7EB',
+    borderRadius: 4,
+    overflow: 'hidden',
+    marginBottom: 10,
   },
   progressBarFill: {
-    position: 'absolute',
-    left: 0,
-    top: 0,
-    bottom: 0,
-    backgroundColor: '#3498db',
-    borderRadius: 2
+    height: '100%',
+    borderRadius: 4,
   },
-  timeLeft: {
-    fontSize: 10,
-    color: '#888',
-    textAlign: 'right'
+  progressDateInfo: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginBottom: 5,
+  },
+  progressDate: {
+    fontSize: 12,
+    color: '#6B7280',
+  },
+  daysLeftText: {
+    fontSize: 12,
+    fontWeight: '500',
+    color: '#6B7280',
+    textAlign: 'right',
   },
   modalOverlay: {
     flex: 1,
@@ -372,25 +423,21 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   modalContent: {
-    backgroundColor: 'rgba(240, 240, 240, 0.8)', // Light grey frosted background
-    borderRadius: 6, // Consistent border radius
-    padding: 20, // Increased padding
+    backgroundColor: '#FFFFFF',
+    borderRadius: 12,
+    padding: 20,
     width: '80%',
     maxWidth: 400,
-    borderWidth: 2,
-    borderColor: '#00CC66', // Green border
-    backdropFilter: 'blur(5px)', // Frosted effect
-    WebkitBackdropFilter: 'blur(5px)', // For Safari support
   },
   modalTitle: {
     fontSize: 18,
     fontWeight: 'bold',
     marginBottom: 12,
-    color: '#333',
+    color: '#111827',
   },
   modalMessage: {
     fontSize: 14,
-    color: '#666',
+    color: '#6B7280',
     marginBottom: 20,
     lineHeight: 20,
   },
@@ -401,20 +448,20 @@ const styles = StyleSheet.create({
   modalButton: {
     paddingHorizontal: 16,
     paddingVertical: 8,
-    borderRadius: 4,
+    borderRadius: 8,
     marginLeft: 8,
   },
   cancelButton: {
-    backgroundColor: '#f1f1f1',
+    backgroundColor: '#F1F1F1',
   },
   cancelButtonText: {
-    color: '#666',
+    color: '#6B7280',
   },
   confirmButton: {
-    backgroundColor: '#ff4d4d',
+    backgroundColor: '#EF4444',
   },
   confirmButtonText: {
-    color: '#fff',
+    color: '#FFFFFF',
   },
 });
 

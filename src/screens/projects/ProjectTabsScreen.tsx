@@ -1,5 +1,5 @@
 import React, { useEffect, useRef } from 'react';
-import { View, ActivityIndicator } from 'react-native';
+import { View, ActivityIndicator, StyleSheet } from 'react-native';
 import { createMaterialTopTabNavigator } from '@react-navigation/material-top-tabs';
 import { useRoute, RouteProp } from '@react-navigation/native';
 import { RootStackParamList, ProjectTabParamList } from '../../navigation/types';
@@ -12,6 +12,20 @@ import { ProjectDetailsTab } from './details/tabs/ProjectDetailsTab';
 import ProjectTeamTab from './details/tabs/ProjectTeamTab';
 import ProjectTasksTab from './details/tabs/ProjectTasksTab';
 import ProjectStatusTab from './details/tabs/ProjectStatusTab';
+
+// Define colors to match the settings page
+const COLORS = {
+  headerText: '#111827',
+  bodyText: '#4B5563',
+  labelText: '#6B7280',
+  green: '#10B981',
+  lightGreen: 'rgba(16, 185, 129, 0.1)',
+  background: '#F9FAFB',
+  cardBackground: '#FFFFFF',
+  cardBorder: '#10B981',
+  sectionBackground: 'rgba(243, 244, 246, 0.7)',
+  iconBackground: 'rgba(16, 185, 129, 0.1)',
+};
 
 const Tab = createMaterialTopTabNavigator<ProjectTabParamList>();
 
@@ -45,33 +59,17 @@ const ProjectTabsContent = ({ projectId }: { projectId: string }) => {
   }, [project?.id, project?.name, setCurrentProject]); // Only depend on the id and name
 
   return (
-    <View style={{ flex: 1 }} className="main-content">
+    <View style={styles.container}>
       <ProjectHeader />
-      <View className="content-tabs">
+      <View style={styles.tabContainer}>
         <Tab.Navigator
           screenOptions={{
-            tabBarStyle: {
-              backgroundColor: '#ffffff',
-              elevation: 0,
-              shadowOpacity: 0,
-              padding: 0
-            },
-            tabBarIndicatorStyle: {
-              backgroundColor: '#00CC66',
-              height: 3, // Match the provided CSS
-            },
-            tabBarLabelStyle: {
-              textTransform: 'none',
-              fontSize: 14,
-              fontWeight: '500',
-              transition: 'color 0.3s ease',
-            },
-            tabBarActiveTintColor: '#001532',
-            tabBarInactiveTintColor: '#6b7280',
-            tabBarItemStyle: {
-              transition: 'all 0.3s ease',
-              padding: 15,
-            },
+            tabBarStyle: styles.tabBar,
+            tabBarIndicatorStyle: styles.tabIndicator,
+            tabBarLabelStyle: styles.tabLabel,
+            tabBarActiveTintColor: COLORS.headerText,
+            tabBarInactiveTintColor: COLORS.labelText,
+            tabBarItemStyle: styles.tabItem,
           }}
         >
           <Tab.Screen 
@@ -110,8 +108,8 @@ const ProjectTabsScreen = () => {
 
   if (!projectId) {
     return (
-      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
-        <ActivityIndicator size="large" color="#2563eb" />
+      <View style={styles.loadingContainer}>
+        <ActivityIndicator size="large" color={COLORS.green} />
       </View>
     );
   }
@@ -119,5 +117,42 @@ const ProjectTabsScreen = () => {
   // No longer need to wrap with ProjectProvider since we have a global ProjectProvider in App.tsx
   return <ProjectTabsContent projectId={projectId} />;
 };
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: COLORS.background,
+  },
+  tabContainer: {
+    flex: 1,
+    borderTopWidth: 1,
+    borderTopColor: 'rgba(16, 185, 129, 0.2)',
+  },
+  tabBar: {
+    backgroundColor: COLORS.cardBackground,
+    elevation: 0,
+    shadowOpacity: 0,
+    borderBottomWidth: 1,
+    borderBottomColor: 'rgba(16, 185, 129, 0.2)',
+  },
+  tabIndicator: {
+    backgroundColor: COLORS.green,
+    height: 3,
+  },
+  tabLabel: {
+    textTransform: 'none',
+    fontSize: 14,
+    fontWeight: '500',
+  },
+  tabItem: {
+    padding: 15,
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center', 
+    alignItems: 'center',
+    backgroundColor: COLORS.background,
+  },
+});
 
 export default ProjectTabsScreen; 

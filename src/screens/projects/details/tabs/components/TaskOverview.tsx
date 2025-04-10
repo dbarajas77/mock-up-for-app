@@ -86,11 +86,12 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
   totalTasksCard: {
-    borderColor: '#ddd', 
-  },
-  inProgressTasksCard: {
     backgroundColor: '#fffbeb', // Light yellow
     borderColor: '#facc15', // Yellow border
+  },
+  inProgressTasksCard: {
+    backgroundColor: '#e0f2fe', // Light blue background
+    borderColor: '#0EA5E9', // Light blue border (#0EA5E9)
   },
   completedTasksCard: {
     backgroundColor: '#f0fdf4', // Light green

@@ -110,6 +110,42 @@ const ProjectStatusTab = () => {
   // Add this to the state variables near the top of the component
   const [milestonesCollapsed, setMilestonesCollapsed] = useState(false);
 
+  // Function to handle user changing progress value
+  const handleProgressChange = (newProgress: number) => {
+    console.log(`[Progress] User changed progress to ${newProgress}%`);
+    
+    // Calculate how many milestones should be marked as completed
+    if (milestones.length > 0) {
+      const milestonesToComplete = Math.round((newProgress / 100) * milestones.length);
+      
+      // Update milestone statuses
+      const updatedMilestones = [...milestones].sort((a, b) => 
+        compareAsc(parseISO(a.due_date), parseISO(b.due_date))
+      ).map((milestone, index) => {
+        if (index < milestonesToComplete) {
+          // Mark as completed if not already
+          if (milestone.status !== 'completed') {
+            // Update in database
+            milestoneService.updateMilestone(milestone.id, { status: 'completed' });
+            return { ...milestone, status: 'completed' };
+          }
+        } else {
+          // Mark as in progress or pending
+          if (milestone.status === 'completed') {
+            // Update in database
+            milestoneService.updateMilestone(milestone.id, { status: 'in_progress' });
+            return { ...milestone, status: 'in_progress' };
+          }
+        }
+        return milestone;
+      });
+      
+      // Update state
+      setMilestones(updatedMilestones);
+      setMilestoneProgress(newProgress);
+    }
+  };
+
   // Fetch milestones when project changes
   useEffect(() => {
     if (project?.id) {
@@ -317,9 +353,33 @@ const ProjectStatusTab = () => {
     setLoadingMilestones(true);
     try {
       const data = await milestoneService.getByProjectId(project.id);
-      const mProgress = calculateMilestoneProgress(data);
+      
+      // Detailed logging for debugging
+      console.log('[MilestoneDebug] Raw milestone data:', data);
+      console.log('[MilestoneDebug] Total milestones:', data.length);
+      
+      // Check for completed milestones
+      const completedMilestones = data.filter(m => m.status === 'completed');
+      console.log('[MilestoneDebug] Completed milestones:', completedMilestones.length);
+      console.log('[MilestoneDebug] Milestone statuses:', data.map(m => m.status).join(', '));
+      
+      // Calculate progress
+      const progress = data.length > 0 
+        ? Math.round((completedMilestones.length / data.length) * 100)
+        : 0;
+      
+      console.log('[MilestoneDebug] Calculated progress:', progress);
+      
+      // Explicitly update state in sequence
       setMilestones(data);
-      setMilestoneProgress(mProgress);
+      setMilestoneProgress(progress); // Direct progress setting
+      
+      // Force a UI update with a slight delay
+      setTimeout(() => {
+        console.log('[MilestoneDebug] Forced progress update:', progress);
+        setMilestoneProgress(progress);
+      }, 500);
+      
       setLoadingMilestones(false);
     } catch (err) {
       console.error('Error fetching milestones:', err);
@@ -537,41 +597,65 @@ const ProjectStatusTab = () => {
     }
   };
 
-  // Fix timezone issue in handleSaveProjectTimeline
+  // Helper function to handle saving project timeline
   const handleSaveProjectTimeline = async () => {
-    if (!project?.id) return;
+    console.log('Saving project timeline...', {startDate, endDate});
+    if (!project?.id) {
+      console.error('No project ID found');
+      return;
+    }
     
     try {
-      // Remove manual timezone adjustments
-      // const adjustedStartDate = new Date(startDate);
-      // adjustedStartDate.setMinutes(adjustedStartDate.getMinutes() + adjustedStartDate.getTimezoneOffset());
-      // const adjustedEndDate = new Date(endDate);
-      // adjustedEndDate.setMinutes(adjustedEndDate.getMinutes() + adjustedEndDate.getTimezoneOffset());
-      
-      // Validate dates using the state dates directly
-      if (isBefore(endDate, startDate)) { 
-        Alert.alert('Invalid Date Range', 'End date must be after start date.');
-        return;
-      }
-      
-      const dateRange: ProjectDateRange = {
-        // Format the state dates directly
-        start_date: format(startDate, 'yyyy-MM-dd'), 
-        end_date: format(endDate, 'yyyy-MM-dd')
+      const newRange = {
+        start_date: format(startDate, 'yyyy-MM-dd'),
+        end_date: format(endDate, 'yyyy-MM-dd'),
       };
       
-      // Call the service to update the 'projects' table
-      await milestoneService.updateProjectDateRange(project.id, dateRange);
-      setProjectDateRange(dateRange); // Update local state
-      setIsTimelineSetupModalVisible(false); // Close modal
+      // Save the range to the database
+      await milestoneService.updateProjectDateRange(project.id, newRange);
       
-      // Remove the call to the non-existent function
-      // calculateTimeProgress(); 
+      // Update local state
+      setProjectDateRange(newRange);
       
-      Alert.alert('Success', 'Project timeline set successfully!');
+      // Close the modal
+      setIsTimelineSetupModalVisible(false);
+      
+      // Refresh project data
+      refetch && refetch();
+      
+      // Show confirmation (optional)
+      console.log('Timeline saved successfully');
     } catch (error) {
-      console.error('Error setting project timeline:', error);
-      Alert.alert('Error', 'Failed to set project timeline.');
+      console.error('Error saving timeline:', error);
+      // Handle error as needed
+    }
+  };
+
+  // Function to get background color for status card
+  const getStatusCardColor = (status: ProjectStatus): string => {
+    switch(status) {
+      case 'active':
+        return '#3B82F6'; // Blue
+      case 'completed':
+        return '#10B981'; // Green
+      case 'archived':
+        return '#9333EA'; // Muted purple
+      default:
+        return '#3B82F6'; // Default to blue
+    }
+  };
+
+  // Function to get background color for priority card
+  const getPriorityCardColor = (priority: ProjectPriority): string => {
+    switch(priority) {
+      case 'high':
+        return '#EF4444'; // Red
+      case 'medium':
+        return '#F59E0B'; // Amber/orange
+      case 'low':
+        return '#0EA5E9'; // Light blue
+      default:
+        return '#F59E0B'; // Default to amber/orange
     }
   };
 
@@ -839,11 +923,62 @@ const ProjectStatusTab = () => {
     }
   }, [project]);
 
+  // Add a useEffect to ensure milestone progress is calculated whenever milestones change
+  useEffect(() => {
+    if (milestones.length > 0) {
+      const completedMilestones = milestones.filter(m => m.status === 'completed');
+      const progress = Math.round((completedMilestones.length / milestones.length) * 100);
+      console.log(`[ProgressDebug] Milestones: ${milestones.length}, Completed: ${completedMilestones.length}, Progress: ${progress}%`);
+      setMilestoneProgress(progress);
+    } else {
+      console.log('[ProgressDebug] No milestones found');
+      setMilestoneProgress(0);
+    }
+  }, [milestones]);
+
+  // Add a special one-time effect to force progress calculation on component mount
+  useEffect(() => {
+    console.log("[PROGRESS_FORCE] Forcing progress calculation on mount");
+    // Force milestone progress calculation on mount
+    if (milestones.length > 0) {
+      const completed = milestones.filter(m => m.status === 'completed').length;
+      const total = milestones.length;
+      const progress = Math.round((completed / total) * 100);
+      console.log(`[PROGRESS_FORCE] Setting progress to ${progress}% (${completed}/${total})`);
+      setMilestoneProgress(progress);
+    } else {
+      // When no milestones exist, set initial progress to 5%
+      setMilestoneProgress(5);
+    }
+  }, []); // Empty dependency array means this runs once on mount
+
+  // Calculate current date position on timeline
+  const calculateCurrentDatePosition = () => {
+    if (!projectDateRange) return 25; // Default position if no date range
+    
+    const startDate = parseISO(projectDateRange.start_date);
+    const endDate = parseISO(projectDateRange.end_date);
+    const today = new Date();
+    
+    // If today is before project start, return 0
+    if (isBefore(today, startDate)) return 0;
+    
+    // If today is after project end, return 100
+    if (isAfter(today, endDate)) return 100;
+    
+    // Calculate position
+    const totalDuration = differenceInDays(endDate, startDate);
+    if (totalDuration <= 0) return 0;
+    
+    const daysPassed = differenceInDays(today, startDate);
+    return (daysPassed / totalDuration) * 100;
+  };
+
   if (isLoading) {
     return (
       <View style={tabStyles.centeredContainer}>
         <ActivityIndicator size="large" color="#0073ea" />
-          </View>
+      </View>
     );
   }
 
@@ -854,7 +989,7 @@ const ProjectStatusTab = () => {
         <TouchableOpacity style={tabStyles.retryButton} onPress={refetch}>
           <Text style={tabStyles.retryButtonText}>Retry</Text>
         </TouchableOpacity>
-        </View>
+      </View>
     );
   }
 
@@ -960,29 +1095,18 @@ const ProjectStatusTab = () => {
       {/* Project Milestones Header */}
       <Text style={tabStyles.sectionTitle}>Project Milestones</Text>
       
-      {/* Status Cards Row - Interactive Version */}
+      {/* Status Cards Row - New Design with colored backgrounds */}
       <View style={tabStyles.statusCardsContainer}>
-        {/* Project Timeline Card - First in order */}
-        <View style={tabStyles.statusCard}>
-          <View style={tabStyles.statusBadgeContainer}>
-            <View style={[tabStyles.statusBadge, tabStyles.activeBadge]}>
-              <Text style={[tabStyles.statusBadgeText, tabStyles.activeText]}>Timeline</Text>
-            </View>
-          </View>
-          <Text style={tabStyles.statusLabel}>Project Timeline</Text>
-          <Text style={tabStyles.statusValue}>
+        {/* Project Timeline Card - Dark Navy */}
+        <View style={tabStyles.timelineCardNew}>
+          <Text style={tabStyles.timelineCardTitle}>PROJECT TIMELINE</Text>
+          <Text style={tabStyles.timelineCardContent}>
             {projectDateRange ? 
-              `${formatDateWithTimezone(projectDateRange.start_date, 'MMM d, yyyy').substring(0, 6)}...` : 
+              `${format(parseISO(projectDateRange.start_date), 'MMM d')} - ${format(parseISO(projectDateRange.end_date), 'MMM d, yyyy')}` : 
               'Not set'}
           </Text>
           <TouchableOpacity 
-            style={{
-              marginTop: 12,
-              backgroundColor: '#E6F0FF',
-              padding: 8,
-              borderRadius: 4,
-              alignItems: 'center',
-            }}
+            style={tabStyles.editButton}
             onPress={() => {
               if (projectDateRange) {
                 setStartDate(parseISO(projectDateRange.start_date));
@@ -994,169 +1118,127 @@ const ProjectStatusTab = () => {
               setIsTimelineSetupModalVisible(true);
             }}
           >
-            <Text style={{color: '#2563EB', fontSize: 12, fontWeight: '500'}}>
-              {projectDateRange ? 'Edit Timeline' : 'Set Timeline'}
-            </Text>
+            <Text style={{color: '#FFFFFF', fontSize: 12}}>Edit</Text>
           </TouchableOpacity>
         </View>
         
-        {/* Project Status Card - Second in order */}
-        <View style={[
-          tabStyles.statusCard,
-          projectStatus === 'active' ? tabStyles.activeCardBg : 
-          projectStatus === 'completed' ? tabStyles.completedCardBg : 
-          tabStyles.archivedCardBg
-        ]}>
-          {/* Status options at the top */}
-          <View style={tabStyles.statusOptionsContainer}>
-            <TouchableOpacity 
-              style={[
-                tabStyles.statusOption, 
-                tabStyles.activeOption,
-                projectStatus === 'active' && tabStyles.selectedOption,
-                projectStatus === 'active' && tabStyles.selectedActiveOption
-              ]}
-              onPress={() => handleProjectStatusChange('active')}
-            >
-              <Text style={tabStyles.statusOptionText}>Active</Text>
-            </TouchableOpacity>
-            <TouchableOpacity 
-              style={[
-                tabStyles.statusOption, 
-                tabStyles.completedOption,
-                projectStatus === 'completed' && tabStyles.selectedOption,
-                projectStatus === 'completed' && tabStyles.selectedCompletedOption
-              ]}
-              onPress={() => handleProjectStatusChange('completed')}
-            >
-              <Text style={tabStyles.statusOptionText}>Completed</Text>
-            </TouchableOpacity>
-            <TouchableOpacity 
-              style={[
-                tabStyles.statusOption, 
-                tabStyles.archivedOption,
-                projectStatus === 'archived' && tabStyles.selectedOption,
-                projectStatus === 'archived' && tabStyles.selectedArchivedOption
-              ]}
-              onPress={() => handleProjectStatusChange('archived')}
-            >
-              <Text style={tabStyles.statusOptionText}>Archived</Text>
-            </TouchableOpacity>
-          </View>
-          
-          <View style={tabStyles.statusBadgeContainer}>
-            <View style={[
-              tabStyles.statusBadge, 
-              projectStatus === 'active' ? tabStyles.activeBadge : 
-              projectStatus === 'completed' ? tabStyles.completedBadge : 
-              tabStyles.archivedBadge
-            ]}>
-              <Text style={[
-                tabStyles.statusBadgeText, 
-                projectStatus === 'active' ? tabStyles.activeText : 
-                projectStatus === 'completed' ? tabStyles.completedText : 
-                tabStyles.archivedText
-              ]}>
-                {formatText(projectStatus)}
-              </Text>
-            </View>
-          </View>
-          <Text style={tabStyles.statusLabel}>Project Status</Text>
-          <Text style={tabStyles.statusValue}>
-            {projectStatus === 'active' ? 'Active' : 
-             projectStatus === 'completed' ? 'Completed' : 'No longer active'}
+        {/* Project Status Card - Dynamically colored based on status */}
+        <TouchableOpacity 
+          style={[tabStyles.statusCardNew, { backgroundColor: getStatusCardColor(projectStatus) }]}
+          onPress={() => {
+            // Cycle through statuses
+            const statuses: ProjectStatus[] = ['active', 'completed', 'archived'];
+            const currentIndex = statuses.indexOf(projectStatus);
+            const nextIndex = (currentIndex + 1) % statuses.length;
+            handleProjectStatusChange(statuses[nextIndex]);
+          }}
+        >
+          <Text style={tabStyles.timelineCardTitle}>PROJECT STATUS</Text>
+          <Text style={tabStyles.timelineCardContent}>
+            {formatText(projectStatus)}
           </Text>
-        </View>
+        </TouchableOpacity>
         
-        {/* Priority Level Card - Third in order */}
-        <View style={[
-          tabStyles.statusCard,
-          projectPriority === 'high' ? tabStyles.highCardBg : 
-          projectPriority === 'medium' ? tabStyles.mediumCardBg : 
-          tabStyles.lowCardBg
-        ]}>
-          {/* Priority options at the top */}
-          <View style={tabStyles.statusOptionsContainer}>
-            <TouchableOpacity 
-              style={[
-                tabStyles.statusOption, 
-                tabStyles.highOption,
-                projectPriority === 'high' && tabStyles.selectedOption,
-                projectPriority === 'high' && tabStyles.selectedHighOption
-              ]}
-              onPress={() => handleProjectPriorityChange('high')}
-            >
-              <Text style={tabStyles.statusOptionText}>High</Text>
-            </TouchableOpacity>
-            <TouchableOpacity 
-              style={[
-                tabStyles.statusOption, 
-                tabStyles.mediumOption,
-                projectPriority === 'medium' && tabStyles.selectedOption,
-                projectPriority === 'medium' && tabStyles.selectedMediumOption
-              ]}
-              onPress={() => handleProjectPriorityChange('medium')}
-            >
-              <Text style={tabStyles.statusOptionText}>Medium</Text>
-            </TouchableOpacity>
-            <TouchableOpacity 
-              style={[
-                tabStyles.statusOption, 
-                tabStyles.lowOption,
-                projectPriority === 'low' && tabStyles.selectedOption,
-                projectPriority === 'low' && tabStyles.selectedLowOption
-              ]}
-              onPress={() => handleProjectPriorityChange('low')}
-            >
-              <Text style={tabStyles.statusOptionText}>Low</Text>
-            </TouchableOpacity>
-          </View>
-          
-          <View style={tabStyles.statusBadgeContainer}>
-            <View style={[
-              tabStyles.statusBadge, 
-              projectPriority === 'high' ? tabStyles.highPriorityBadge : 
-              projectPriority === 'medium' ? tabStyles.mediumPriorityBadge : 
-              tabStyles.lowPriorityBadge
-            ]}>
-              <Text style={[
-                tabStyles.statusBadgeText, 
-                projectPriority === 'high' ? tabStyles.highPriorityText : 
-                projectPriority === 'medium' ? tabStyles.mediumPriorityText : 
-                tabStyles.lowPriorityText
-              ]}>
-                {formatText(projectPriority)}
-              </Text>
-            </View>
-          </View>
-          <Text style={tabStyles.statusLabel}>Priority Level</Text>
-          <Text style={tabStyles.statusValue}>
-            {formatText(projectPriority)} priority
+        {/* Priority Level Card - Dynamically colored based on priority */}
+        <TouchableOpacity 
+          style={[tabStyles.priorityCardNew, { backgroundColor: getPriorityCardColor(projectPriority) }]}
+          onPress={() => {
+            // Cycle through priorities
+            const priorities: ProjectPriority[] = ['high', 'medium', 'low'];
+            const currentIndex = priorities.indexOf(projectPriority);
+            const nextIndex = (currentIndex + 1) % priorities.length;
+            handleProjectPriorityChange(priorities[nextIndex]);
+          }}
+        >
+          <Text style={tabStyles.timelineCardTitle}>PRIORITY LEVEL</Text>
+          <Text style={tabStyles.timelineCardContent}>
+            {formatText(projectPriority)}
           </Text>
-        </View>
+        </TouchableOpacity>
       </View>
       
-      {/* Timeline Progress Bar */}
+      {/* Timeline Progress Bar - Exact Match to Image */}
       <View style={tabStyles.progressCard}>
-        <View style={tabStyles.progressBarContainer}>
-          <View style={[tabStyles.progressBarFill, { width: `${milestoneProgress}%` }]} />
+        {/* Progress container with properly centered progress bar */}
+        <View style={tabStyles.progressBarOuterContainer}>
+          {/* Current date shown prominently above the bar */}
+          <Text style={[
+            tabStyles.dateAboveBar,
+            { left: `${calculateCurrentDatePosition()}%` }
+          ]}>
+            {format(new Date(), 'MMM d')}
+          </Text>
+          
+          {/* Start Date Circle Marker */}
+          <View style={tabStyles.startDateCircle} />
+          
+          {/* Progress bar container */}
+          <View style={tabStyles.progressBarContainer}>
+            {/* Current date marker line */}
+            <View 
+              style={[
+                tabStyles.currentDateLine,
+                { left: `${calculateCurrentDatePosition()}%` }
+              ]}
+            />
+            
+            {/* Progress bar fill */}
+            <View 
+              style={{
+                position: 'absolute',
+                left: 0,
+                top: 0,
+                height: '100%',
+                width: `${milestoneProgress}%`,
+                backgroundColor: '#00FF00', // Bright green to match image
+                borderTopLeftRadius: 8,
+                borderBottomLeftRadius: 8,
+              }} 
+            />
+          </View>
         </View>
-        <View style={tabStyles.progressMarkers}>
-          <View style={tabStyles.progressMarkerItem}>
-            <Text style={tabStyles.progressMarkerText}>0%</Text>
+        
+        {/* Date labels and percentage below the bar */}
+        <View style={tabStyles.progressDetailsContainer}>
+          {/* Left side: start date */}
+          <Text style={tabStyles.barDateText}>
+            {projectDateRange ? format(parseISO(projectDateRange.start_date), 'MMM d') : 'Apr 1'}
+          </Text>
+          
+          {/* Middle: controls and percentage */}
+          <View style={tabStyles.progressControlsRow}>
+            {/* Decrease button */}
+            <TouchableOpacity 
+              style={tabStyles.controlButton}
+              onPress={() => {
+                // Decrease by 1% but not below 0
+                const newProgress = Math.max(0, milestoneProgress - 1);
+                setMilestoneProgress(newProgress);
+              }}
+            >
+              <Text style={tabStyles.controlButtonText}>- Decrease</Text>
+            </TouchableOpacity>
+            
+            {/* Percentage display */}
+            <Text style={tabStyles.barPercentageText}>{milestoneProgress}%</Text>
+            
+            {/* Increase button */}
+            <TouchableOpacity 
+              style={tabStyles.controlButton}
+              onPress={() => {
+                // Increase by 1% but not above 100
+                const newProgress = Math.min(100, milestoneProgress + 1);
+                setMilestoneProgress(newProgress);
+              }}
+            >
+              <Text style={[tabStyles.controlButtonText, {color: '#10B981'}]}>+ Increase</Text>
+            </TouchableOpacity>
           </View>
-          <View style={tabStyles.progressMarkerItem}>
-            <Text style={tabStyles.progressMarkerText}>25%</Text>
-          </View>
-          <View style={tabStyles.progressMarkerItem}>
-            <Text style={tabStyles.progressMarkerText}>50%</Text>
-          </View>
-          <View style={tabStyles.progressMarkerItem}>
-            <Text style={tabStyles.progressMarkerText}>75%</Text>
-          </View>
-          <View style={tabStyles.progressMarkerItem}>
-            <Text style={tabStyles.progressMarkerText}>100%</Text>
-          </View>
+          
+          {/* Right side: end date */}
+          <Text style={tabStyles.barDateText}>
+            {projectDateRange ? format(parseISO(projectDateRange.end_date), 'MMM d') : 'Apr 30'}
+          </Text>
         </View>
       </View>
       
@@ -1178,7 +1260,7 @@ const ProjectStatusTab = () => {
             <View style={tabStyles.indicatorRow}>
               <Feather name="check" size={16} color="#10B981" style={{marginRight: 4}} />
               <Text style={tabStyles.indicatorValue}>
-                {milestones.filter(m => m.status === 'completed').length}/{milestones.length}
+                {milestones.filter(m => m.status === 'completed').length}/{milestones.length > 0 ? milestones.length : '0'}
               </Text>
             </View>
             <Text style={tabStyles.indicatorLabel}>Milestones Done</Text>

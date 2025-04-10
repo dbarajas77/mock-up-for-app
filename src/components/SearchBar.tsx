@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, TextInput, StyleSheet, StyleProp, ViewStyle } from 'react-native';
+import { View, TextInput, StyleSheet, StyleProp, ViewStyle, Dimensions, useWindowDimensions } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 
 interface SearchBarProps {
@@ -9,29 +9,55 @@ interface SearchBarProps {
   style?: StyleProp<ViewStyle>;
 }
 
-const SearchBar: React.FC<SearchBarProps> = ({ value, onChangeText, placeholder, style }) => (
-  <View style={[styles.container, style]}>
-    <TextInput
-      style={styles.input}
-      value={value}
-      onChangeText={onChangeText}
-      placeholder={placeholder}
-      placeholderTextColor="#999"
-    />
-  </View>
-);
+const SearchBar: React.FC<SearchBarProps> = ({ value, onChangeText, placeholder, style }) => {
+  const { width } = useWindowDimensions();
+  const isSmallScreen = width < 375;
+  
+  return (
+    <View style={[styles.container, isSmallScreen && styles.containerSmall, style]}>
+      <Ionicons 
+        name="search-outline" 
+        size={isSmallScreen ? 16 : 18} 
+        color="#999" 
+        style={styles.searchIcon} 
+      />
+      <TextInput
+        style={[styles.input, isSmallScreen && styles.inputSmall]}
+        value={value}
+        onChangeText={onChangeText}
+        placeholder={placeholder}
+        placeholderTextColor="#999"
+      />
+    </View>
+  );
+};
 
 const styles = StyleSheet.create({
   container: {
-    padding: 8,
-    backgroundColor: '#f5f5f5',
-  },
-  input: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
     backgroundColor: 'white',
     borderRadius: 8,
+    paddingHorizontal: 12,
+    borderWidth: 1,
+    borderColor: '#e5e7eb',
+  },
+  containerSmall: {
+    paddingHorizontal: 8,
+  },
+  searchIcon: {
+    marginRight: 8,
+  },
+  input: {
+    flex: 1,
     padding: 8,
     fontSize: 16,
     color: '#333',
+  },
+  inputSmall: {
+    padding: 6,
+    fontSize: 14,
   },
 });
 
