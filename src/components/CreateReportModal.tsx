@@ -12,9 +12,10 @@ interface CreateReportModalProps {
   projectId: string;
   onClose: () => void;
   onReportCreated: (report: AnyReport) => void;
+  isEmbedded: boolean;
 }
 
-const CreateReportModal: React.FC<CreateReportModalProps> = ({ projectId, onClose, onReportCreated }) => {
+const CreateReportModal: React.FC<CreateReportModalProps> = ({ projectId, onClose, onReportCreated, isEmbedded }) => {
   const [selectedReportType, setSelectedReportType] = useState<ReportType | null>(null);
   const [photos, setPhotos] = useState<Photo[]>([]);
   const [selectedPhotos, setSelectedPhotos] = useState<Photo[]>([]);
@@ -352,15 +353,17 @@ const CreateReportModal: React.FC<CreateReportModalProps> = ({ projectId, onClos
   );
 
   return (
-    <View style={styles.modalContainer}>
-      <View style={styles.modalContent}>
-        {/* Modal Header */}
-        <View style={styles.header}>
-          <Text style={styles.title}>Create New Report</Text>
-          <TouchableOpacity onPress={onClose} style={styles.closeButton}>
-            <Ionicons name="close" size={24} color="#666" />
-          </TouchableOpacity>
-        </View>
+    <View style={[styles.container, !isEmbedded && styles.modalContainer]}>
+      <View style={[styles.modalContent, isEmbedded && styles.embeddedContent]}>
+        {/* Only show header if not embedded in a screen that already has its own header */}
+        {!isEmbedded && (
+          <View style={styles.header}>
+            <Text style={styles.title}>Create New Report</Text>
+            <TouchableOpacity onPress={onClose} style={styles.closeButton}>
+              <Ionicons name="close" size={24} color="#666" />
+            </TouchableOpacity>
+          </View>
+        )}
 
         <ScrollView style={styles.scrollContainer}>
           {/* Report Type Selection */}
@@ -423,6 +426,17 @@ const CreateReportModal: React.FC<CreateReportModalProps> = ({ projectId, onClos
 };
 
 const styles = StyleSheet.create({
+  container: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    zIndex: 1000,
+  },
   modalContainer: {
     position: 'absolute',
     top: 0,
@@ -633,6 +647,9 @@ const styles = StyleSheet.create({
     borderRadius: 6,
     padding: 12,
     marginBottom: 12,
+  },
+  embeddedContent: {
+    // Add styles for embedded content if needed
   },
 });
 

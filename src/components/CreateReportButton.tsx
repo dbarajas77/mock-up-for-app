@@ -1,47 +1,36 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { TouchableOpacity, Text, StyleSheet } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import CreateReportModal from './CreateReportModal';
+import { useNavigation } from '@react-navigation/native';
+import { StackNavigationProp } from '@react-navigation/stack';
+import { ReportsStackParamList } from '../navigation/types';
 
 type CreateReportButtonProps = {
   projectId: string;
 };
 
 const CreateReportButton = ({ projectId }: CreateReportButtonProps) => {
-  const [isModalOpen, setIsModalOpen] = useState(false);
+  const navigation = useNavigation<StackNavigationProp<ReportsStackParamList>>();
 
-  const handleOpenModal = () => {
-    setIsModalOpen(true);
-  };
-
-  const handleCloseModal = () => {
-    setIsModalOpen(false);
-  };
-
-  const handleReportCreated = () => {
-    setIsModalOpen(false);
-    // Additional logic after report creation could go here
+  const handlePress = () => {
+    if (!projectId) {
+      console.error('Cannot create report: missing projectId');
+      return;
+    }
+    
+    // Navigate to the CreateReport screen with projectId
+    navigation.navigate('CreateReport', { projectId });
   };
 
   return (
-    <>
-      <TouchableOpacity 
-        style={styles.button}
-        onPress={handleOpenModal}
-        activeOpacity={0.8}
-      >
-        <Ionicons name="add-circle-outline" size={20} color="#fff" />
-        <Text style={styles.buttonText}>Create Report</Text>
-      </TouchableOpacity>
-
-      {isModalOpen && (
-        <CreateReportModal 
-          projectId={projectId}
-          onClose={handleCloseModal}
-          onReportCreated={handleReportCreated}
-        />
-      )}
-    </>
+    <TouchableOpacity 
+      style={styles.button}
+      onPress={handlePress}
+      activeOpacity={0.8}
+    >
+      <Ionicons name="add-circle-outline" size={20} color="#fff" />
+      <Text style={styles.buttonText}>Create Report</Text>
+    </TouchableOpacity>
   );
 };
 
