@@ -6,16 +6,15 @@ import { Photo } from '../services/photoService';
 import { Milestone } from '../services/milestoneService';
 import * as reportService from '../services/reportService';
 import * as photoService from '../services/photoService';
-import * as milestoneService from '../services/milestoneService';
+import { milestoneService } from '../services/milestoneService';
 
 interface CreateReportModalProps {
   projectId: string;
   onClose: () => void;
   onReportCreated: (report: AnyReport) => void;
-  isEmbedded: boolean;
 }
 
-const CreateReportModal: React.FC<CreateReportModalProps> = ({ projectId, onClose, onReportCreated, isEmbedded }) => {
+const CreateReportModal: React.FC<CreateReportModalProps> = ({ projectId, onClose, onReportCreated }) => {
   const [selectedReportType, setSelectedReportType] = useState<ReportType | null>(null);
   const [photos, setPhotos] = useState<Photo[]>([]);
   const [selectedPhotos, setSelectedPhotos] = useState<Photo[]>([]);
@@ -28,11 +27,13 @@ const CreateReportModal: React.FC<CreateReportModalProps> = ({ projectId, onClos
     // Fetch photos and milestones when component mounts
     const fetchData = async () => {
       try {
+        console.log('Fetching data for project:', projectId);
         const [fetchedPhotos, fetchedMilestones] = await Promise.all([
           photoService.getPhotos(projectId),
-          milestoneService.milestoneService.getByProjectId(projectId)
+          milestoneService.getByProjectId(projectId)
         ]);
         
+        console.log(`Fetched ${fetchedPhotos.length} photos and ${fetchedMilestones.length} milestones`);
         setPhotos(fetchedPhotos);
         setMilestones(fetchedMilestones);
       } catch (error) {
@@ -353,101 +354,75 @@ const CreateReportModal: React.FC<CreateReportModalProps> = ({ projectId, onClos
   );
 
   return (
-    <View style={[styles.container, !isEmbedded && styles.modalContainer]}>
-      <View style={[styles.modalContent, isEmbedded && styles.embeddedContent]}>
-        {/* Only show header if not embedded in a screen that already has its own header */}
-        {!isEmbedded && (
-          <View style={styles.header}>
-            <Text style={styles.title}>Create New Report</Text>
-            <TouchableOpacity onPress={onClose} style={styles.closeButton}>
-              <Ionicons name="close" size={24} color="#666" />
-            </TouchableOpacity>
-          </View>
-        )}
+    <View style={styles.modalContent}>
+      {/* Modal Header */}
+      <View style={styles.header}>
+        <Text style={styles.title}>Create New Report</Text>
+        <TouchableOpacity onPress={onClose} style={styles.closeButton}>
+          <Ionicons name="close" size={24} color="#666" />
+        </TouchableOpacity>
+      </View>
 
-        <ScrollView style={styles.scrollContainer}>
-          {/* Report Type Selection */}
-          <View style={styles.section}>
-            <Text style={styles.sectionTitle}>Select Report Type</Text>
-            <View style={styles.reportTypeGrid}>
-              {Object.values(ReportType).map((type) => (
-                <TouchableOpacity
-                  key={type}
+      <ScrollView style={styles.scrollContainer}>
+        {/* Report Type Selection */}
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>Select Report Type</Text>
+          <View style={styles.reportTypeGrid}>
+            {Object.values(ReportType).map((type) => (
+              <TouchableOpacity
+                key={type}
+                style={[
+                  styles.reportTypeItem,
+                  selectedReportType === type && styles.reportTypeItemSelected
+                ]}
+                onPress={() => handleReportTypeSelect(type)}
+              >
+                <Text
                   style={[
-                    styles.reportTypeItem,
-                    selectedReportType === type && styles.reportTypeItemSelected
+                    styles.reportTypeText,
+                    selectedReportType === type && styles.reportTypeTextSelected
                   ]}
-                  onPress={() => handleReportTypeSelect(type)}
                 >
-                  <Text
-                    style={[
-                      styles.reportTypeText,
-                      selectedReportType === type && styles.reportTypeTextSelected
-                    ]}
-                  >
-                    {type}
-                  </Text>
-                </TouchableOpacity>
-              ))}
-            </View>
+                  {type}
+                </Text>
+              </TouchableOpacity>
+            ))}
           </View>
-
-          {/* Dynamic Form based on selected report type */}
-          <View style={styles.section}>
-            {renderDynamicForm()}
-          </View>
-        </ScrollView>
-
-        {/* Modal Footer */}
-        <View style={styles.footer}>
-          <TouchableOpacity
-            style={styles.secondaryButton}
-            onPress={onClose}
-            disabled={isLoading}
-          >
-            <Text style={styles.secondaryButtonText}>Cancel</Text>
-          </TouchableOpacity>
-          <TouchableOpacity
-            style={[
-              styles.primaryButton,
-              (!selectedReportType || isLoading) && styles.disabledButton
-            ]}
-            onPress={handleSubmit}
-            disabled={!selectedReportType || isLoading}
-          >
-            <Text style={styles.primaryButtonText}>
-              {isLoading ? 'Creating...' : 'Create Report'}
-            </Text>
-          </TouchableOpacity>
         </View>
+
+        {/* Dynamic Form based on selected report type */}
+        <View style={styles.section}>
+          {renderDynamicForm()}
+        </View>
+      </ScrollView>
+
+      {/* Modal Footer */}
+      <View style={styles.footer}>
+        <TouchableOpacity
+          style={styles.secondaryButton}
+          onPress={onClose}
+          disabled={isLoading}
+        >
+          <Text style={styles.secondaryButtonText}>Cancel</Text>
+        </TouchableOpacity>
+        <TouchableOpacity
+          style={[
+            styles.primaryButton,
+            (!selectedReportType || isLoading) && styles.disabledButton
+          ]}
+          onPress={handleSubmit}
+          disabled={!selectedReportType || isLoading}
+        >
+          <Text style={styles.primaryButtonText}>
+            {isLoading ? 'Creating...' : 'Create Report'}
+          </Text>
+        </TouchableOpacity>
       </View>
     </View>
   );
 };
 
 const styles = StyleSheet.create({
-  container: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
-    justifyContent: 'center',
-    alignItems: 'center',
-    zIndex: 1000,
-  },
-  modalContainer: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
-    justifyContent: 'center',
-    alignItems: 'center',
-    zIndex: 1000,
-  },
   modalContent: {
     backgroundColor: '#fff',
     borderRadius: 8,
@@ -459,6 +434,7 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.25,
     shadowRadius: 3.84,
     elevation: 5,
+    overflow: 'hidden',
   },
   header: {
     flexDirection: 'row',
@@ -647,9 +623,6 @@ const styles = StyleSheet.create({
     borderRadius: 6,
     padding: 12,
     marginBottom: 12,
-  },
-  embeddedContent: {
-    // Add styles for embedded content if needed
   },
 });
 

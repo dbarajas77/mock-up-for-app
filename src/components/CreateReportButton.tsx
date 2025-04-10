@@ -1,36 +1,57 @@
-import React from 'react';
-import { TouchableOpacity, Text, StyleSheet } from 'react-native';
+import React, { useState } from 'react';
+import { TouchableOpacity, Text, StyleSheet, Modal, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { useNavigation } from '@react-navigation/native';
-import { StackNavigationProp } from '@react-navigation/stack';
-import { ReportsStackParamList } from '../navigation/types';
+import CreateReportModal from './CreateReportModal';
 
 type CreateReportButtonProps = {
   projectId: string;
 };
 
 const CreateReportButton = ({ projectId }: CreateReportButtonProps) => {
-  const navigation = useNavigation<StackNavigationProp<ReportsStackParamList>>();
+  const [isModalOpen, setIsModalOpen] = useState(false);
 
-  const handlePress = () => {
-    if (!projectId) {
-      console.error('Cannot create report: missing projectId');
-      return;
-    }
-    
-    // Navigate to the CreateReport screen with projectId
-    navigation.navigate('CreateReport', { projectId });
+  const handleOpenModal = () => {
+    console.log('Opening modal for project:', projectId);
+    setIsModalOpen(true);
+  };
+
+  const handleCloseModal = () => {
+    console.log('Closing modal');
+    setIsModalOpen(false);
+  };
+
+  const handleReportCreated = () => {
+    console.log('Report created successfully');
+    setIsModalOpen(false);
+    // Additional logic after report creation could go here
   };
 
   return (
-    <TouchableOpacity 
-      style={styles.button}
-      onPress={handlePress}
-      activeOpacity={0.8}
-    >
-      <Ionicons name="add-circle-outline" size={20} color="#fff" />
-      <Text style={styles.buttonText}>Create Report</Text>
-    </TouchableOpacity>
+    <>
+      <TouchableOpacity 
+        style={styles.button}
+        onPress={handleOpenModal}
+        activeOpacity={0.8}
+      >
+        <Ionicons name="add-circle-outline" size={20} color="#fff" />
+        <Text style={styles.buttonText}>Create Report</Text>
+      </TouchableOpacity>
+
+      <Modal
+        visible={isModalOpen}
+        transparent={true}
+        animationType="fade"
+        onRequestClose={handleCloseModal}
+      >
+        <View style={styles.modalWrapper}>
+          <CreateReportModal 
+            projectId={projectId}
+            onClose={handleCloseModal}
+            onReportCreated={handleReportCreated}
+          />
+        </View>
+      </Modal>
+    </>
   );
 };
 
@@ -54,6 +75,11 @@ const styles = StyleSheet.create({
     fontSize: 14,
     marginLeft: 8,
   },
+  modalWrapper: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+  }
 });
 
 export default CreateReportButton;

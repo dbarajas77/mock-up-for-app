@@ -1,9 +1,8 @@
 import React from 'react';
 import { createStackNavigator } from '@react-navigation/stack';
 import { ReportsStackParamList } from './types';
-import ReportsScreen from '../screens/reports/ReportsScreen';
+import ReportsScreen from '../screens/reports/index.tsx';
 import ReportDetailScreen from '../screens/reports/ReportDetailScreen';
-import CreateReportScreen from '../screens/reports/CreateReportScreen';
 
 const Stack = createStackNavigator<ReportsStackParamList>();
 
@@ -23,10 +22,6 @@ const ReportsStackNavigator = () => {
       <Stack.Screen
         name="ReportDetail"
         component={ReportDetailScreen}
-      />
-      <Stack.Screen
-        name="CreateReport"
-        component={CreateReportScreen}
       />
     </Stack.Navigator>
   );
