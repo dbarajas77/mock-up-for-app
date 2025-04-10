@@ -211,3 +211,37 @@ export const projectService = {
     }
   }
 };
+
+// Get the active project ID from various sources
+export const getActiveProjectId = async (): Promise<string | null> => {
+  try {
+    // First check localStorage
+    const storedProjectId = localStorage.getItem('activeProjectId') || 
+                            localStorage.getItem('currentProjectId') || 
+                            localStorage.getItem('projectId');
+    
+    if (storedProjectId) {
+      console.log('Found project ID in localStorage:', storedProjectId);
+      return storedProjectId;
+    }
+
+    // For React Native, try AsyncStorage
+    if (typeof AsyncStorage !== 'undefined') {
+      const asyncStorageId = await AsyncStorage.getItem('activeProjectId') || 
+                             await AsyncStorage.getItem('currentProjectId') || 
+                             await AsyncStorage.getItem('projectId');
+      
+      if (asyncStorageId) {
+        console.log('Found project ID in AsyncStorage:', asyncStorageId);
+        return asyncStorageId;
+      }
+    }
+
+    // If we're here, we couldn't find a project ID
+    console.log('No active project ID found');
+    return null;
+  } catch (error) {
+    console.error('Error getting active project ID:', error);
+    return null;
+  }
+};

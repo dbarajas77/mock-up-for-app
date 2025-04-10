@@ -57,6 +57,32 @@ const ProjectsPage = () => {
     fetchProjects();
   };
 
+  // Handle project deleted - optimize to avoid unnecessary refetch
+  const handleProjectDeleted = (deletedProjectId) => {
+    console.log('Project deleted, updating UI for project ID:', deletedProjectId);
+    
+    // Update the projects state immediately 
+    setProjects(prevProjects => {
+      console.log('Filtering out project ID:', deletedProjectId);
+      // Log the current projects and the one we're removing
+      console.log('Current projects:', prevProjects.map(p => p.id));
+      return prevProjects.filter(p => p.id !== deletedProjectId);
+    });
+    
+    // Show success message
+    const successMessage = document.createElement('div');
+    successMessage.className = 'fixed top-4 right-4 bg-green-600 text-white px-4 py-2 rounded shadow-lg z-50';
+    successMessage.textContent = 'Project successfully deleted';
+    document.body.appendChild(successMessage);
+    
+    // Remove the message after 3 seconds
+    setTimeout(() => {
+      if (document.body.contains(successMessage)) {
+        document.body.removeChild(successMessage);
+      }
+    }, 3000);
+  };
+
   return (
     <div className="flex h-screen bg-gray-50">
       {/* Left Sidebar */}
@@ -258,7 +284,11 @@ const ProjectsPage = () => {
               {/* Projects grid */}
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
                 {filteredProjects.map(project => (
-                  <ProjectCard key={project.id} project={project} />
+                  <ProjectCard 
+                    key={project.id} 
+                    project={project} 
+                    onDelete={handleProjectDeleted}
+                  />
                 ))}
               </div>
             </>

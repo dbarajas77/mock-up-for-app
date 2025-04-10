@@ -6,35 +6,11 @@ import { Provider as ReduxProvider } from 'react-redux';
 import { store } from './src/redux/store';
 import { StatusBar } from 'expo-status-bar';
 import { AuthProvider } from './src/contexts/AuthContext';
+import { ThemeProvider } from './src/contexts/ThemeContext';
 import { CurrentProjectProvider } from './src/contexts/CurrentProjectContext';
+import { ProjectProvider } from './src/contexts/ProjectContext';
 import RootNavigator from './src/navigation/RootNavigator';
-import { View, Text } from 'react-native';
-
-// Error boundary component
-class ErrorBoundary extends React.Component {
-  state = { hasError: false, error: null };
-
-  static getDerivedStateFromError(error) {
-    return { hasError: true, error };
-  }
-
-  componentDidCatch(error, errorInfo) {
-    console.error('App Error:', error);
-    console.error('Error Info:', errorInfo);
-  }
-
-  render() {
-    if (this.state.hasError) {
-      return (
-        <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', padding: 20 }}>
-          <Text style={{ fontSize: 18, color: 'red', marginBottom: 10 }}>Something went wrong!</Text>
-          <Text style={{ color: '#666' }}>{this.state.error?.toString()}</Text>
-        </View>
-      );
-    }
-    return this.props.children;
-  }
-}
+import ErrorBoundary from './src/components/ErrorBoundary';
 
 export default function App() {
   useEffect(() => {
@@ -52,9 +28,13 @@ export default function App() {
             >
               <StatusBar style="dark" />
               <AuthProvider>
-                <CurrentProjectProvider>
-                  <RootNavigator />
-                </CurrentProjectProvider>
+                <ThemeProvider>
+                  <ProjectProvider>
+                    <CurrentProjectProvider>
+                      <RootNavigator />
+                    </CurrentProjectProvider>
+                  </ProjectProvider>
+                </ThemeProvider>
               </AuthProvider>
             </NavigationContainer>
           </GestureHandlerRootView>

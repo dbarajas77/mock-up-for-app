@@ -8,6 +8,7 @@ interface Profile {
   full_name: string | null;
   avatar_url: string | null;
   phone: string | null;
+  job_title: string | null;
   role: string;
   status: string;
   last_active?: Date;

@@ -3,7 +3,7 @@ import { View, ActivityIndicator } from 'react-native';
 import { createMaterialTopTabNavigator } from '@react-navigation/material-top-tabs';
 import { useRoute, RouteProp } from '@react-navigation/native';
 import { RootStackParamList, ProjectTabParamList } from '../../navigation/types';
-import { ProjectProvider, useProject } from '../../contexts/ProjectContext';
+import { useProject } from '../../contexts/ProjectContext';
 import { useCurrentProject } from '../../contexts/CurrentProjectContext';
 import ProjectHeader from './details/components/ProjectHeader';
 
@@ -18,9 +18,17 @@ const Tab = createMaterialTopTabNavigator<ProjectTabParamList>();
 type ProjectTabsRouteProp = RouteProp<RootStackParamList, 'ProjectTabs'>;
 
 const ProjectTabsContent = ({ projectId }: { projectId: string }) => {
-  const { project } = useProject();
+  const { project, activeProjectId, setActiveProjectId } = useProject();
   const { setCurrentProject } = useCurrentProject();
   const previousProjectIdRef = useRef<string | null>(null);
+
+  // Set active project ID if needed
+  useEffect(() => {
+    if (projectId && projectId !== activeProjectId) {
+      console.log(`🔄 Updating active project ID to: ${projectId}`);
+      setActiveProjectId(projectId);
+    }
+  }, [projectId, activeProjectId, setActiveProjectId]);
 
   // Only update the current project if the project ID has changed
   useEffect(() => {
@@ -34,7 +42,7 @@ const ProjectTabsContent = ({ projectId }: { projectId: string }) => {
         previousProjectIdRef.current = project.id;
       }, 100);
     }
-  }, [project?.id, project?.name]); // Only depend on the id and name
+  }, [project?.id, project?.name, setCurrentProject]); // Only depend on the id and name
 
   return (
     <View style={{ flex: 1 }}>
@@ -100,11 +108,8 @@ const ProjectTabsScreen = () => {
     );
   }
 
-  return (
-    <ProjectProvider projectId={projectId}>
-      <ProjectTabsContent projectId={projectId} />
-    </ProjectProvider>
-  );
+  // No longer need to wrap with ProjectProvider since we have a global ProjectProvider in App.tsx
+  return <ProjectTabsContent projectId={projectId} />;
 };
 
 export default ProjectTabsScreen; 

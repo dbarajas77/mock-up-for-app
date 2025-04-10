@@ -1,0 +1,91 @@
+{
+  "meta": {
+    "generatedAt": "2025-04-08T17:36:16.310Z",
+    "tasksAnalyzed": 10,
+    "thresholdScore": 5,
+    "projectName": "Your Project Name",
+    "usedResearch": false
+  },
+  "complexityAnalysis": [
+    {
+      "taskId": 1,
+      "taskTitle": "Setup Project Infrastructure",
+      "complexityScore": 7,
+      "recommendedSubtasks": 4,
+      "expansionPrompt": "Break down the React Native/Expo project setup with Supabase integration into subtasks covering: 1) Initial project creation and dependency installation, 2) Environment configuration for Supabase connection, 3) Authentication implementation (login, registration, password recovery), 4) JWT and session management setup.",
+      "reasoning": "This task involves multiple technical components including project initialization, third-party integrations, and authentication flows. It requires configuring several systems to work together and implementing security-sensitive features like authentication, making it moderately complex."
+    },
+    {
+      "taskId": 2,
+      "taskTitle": "Implement Database Schema",
+      "complexityScore": 6,
+      "recommendedSubtasks": 4,
+      "expansionPrompt": "Break down the Supabase database schema implementation into subtasks covering: 1) Core table creation (projects, reports, photos), 2) Junction table setup with proper relationships, 3) Row-Level Security policy implementation, 4) Performance optimization with proper indexing.",
+      "reasoning": "Creating a database schema requires careful planning of relationships, constraints, and security policies. The task involves multiple tables with complex relationships and security considerations, but follows standard database design patterns."
+    },
+    {
+      "taskId": 3,
+      "taskTitle": "Develop Project Management Module",
+      "complexityScore": 8,
+      "recommendedSubtasks": 5,
+      "expansionPrompt": "Break down the Project Management Module implementation into subtasks covering: 1) Project listing interface with filters, 2) Project creation/edit forms with validation, 3) Project detail view components, 4) Global project context provider implementation, 5) Supabase CRUD service layer with error handling.",
+      "reasoning": "This task involves building multiple interconnected UI components, state management, form validation, and API integration. It's a core module of the application with complex user interactions and data flows."
+    },
+    {
+      "taskId": 4,
+      "taskTitle": "Implement Photo Management System",
+      "complexityScore": 9,
+      "recommendedSubtasks": 5,
+      "expansionPrompt": "Break down the Photo Management System into subtasks covering: 1) Photo upload component with form fields, 2) EXIF-based orientation detection implementation, 3) Gallery component with correct orientation rendering, 4) Supabase storage integration service, 5) Image processing utilities and error handling.",
+      "reasoning": "This task involves complex client-side image processing, handling binary data, integration with device APIs, and storage management. The orientation detection requirement adds significant complexity, as does the need for optimized image loading."
+    },
+    {
+      "taskId": 5,
+      "taskTitle": "Develop Basic Report Generation",
+      "complexityScore": 8,
+      "recommendedSubtasks": 5,
+      "expansionPrompt": "Break down the Report Generation system into subtasks covering: 1) Report creation forms for different report types, 2) JSONB data structure implementation with TypeScript types, 3) Photo selection interface for reports, 4) Report listing view with filters, 5) Data transformation layer between database and frontend formats.",
+      "reasoning": "This task involves complex form handling, data transformation, and integration with the photo system. The JSONB content pattern requires careful type management, and the different report types add to the complexity."
+    },
+    {
+      "taskId": 6,
+      "taskTitle": "Implement Report Preview and PDF Generation",
+      "complexityScore": 9,
+      "recommendedSubtasks": 5,
+      "expansionPrompt": "Break down the Report Preview and PDF Generation into subtasks covering: 1) Interactive modal preview component, 2) React-PDF template implementation for different report types, 3) PDF generation service with image handling, 4) Download functionality implementation, 5) Print service with orientation correction.",
+      "reasoning": "PDF generation is inherently complex, especially with dynamic content and images. This task requires handling document layout, image processing, and browser integration for printing and downloading. Performance optimization with many images adds another layer of complexity."
+    },
+    {
+      "taskId": 7,
+      "taskTitle": "Implement Responsive UI and Navigation",
+      "complexityScore": 7,
+      "recommendedSubtasks": 4,
+      "expansionPrompt": "Break down the Responsive UI and Navigation implementation into subtasks covering: 1) Responsive layout components using Flexbox/Grid, 2) Navigation system implementation with React Navigation, 3) Modal system for forms and previews, 4) Reusable UI component library with consistent styling.",
+      "reasoning": "Building responsive interfaces that work well across devices requires careful planning and testing. This task involves creating a consistent navigation system and handling different screen sizes, but follows established patterns in React development."
+    },
+    {
+      "taskId": 8,
+      "taskTitle": "Implement Error Handling and Reliability Features",
+      "complexityScore": 7,
+      "recommendedSubtasks": 4,
+      "expansionPrompt": "Break down the Error Handling and Reliability implementation into subtasks covering: 1) React error boundary setup and fallback UI, 2) Centralized error logging service, 3) Auto-retry mechanisms for transient failures, 4) Form state preservation to prevent data loss.",
+      "reasoning": "Comprehensive error handling requires addressing many edge cases and failure modes. This task involves creating systems that can gracefully recover from failures and preserve user data, which requires careful planning and testing."
+    },
+    {
+      "taskId": 9,
+      "taskTitle": "Implement Basic Offline Capabilities",
+      "complexityScore": 10,
+      "recommendedSubtasks": 5,
+      "expansionPrompt": "Break down the Offline Capabilities implementation into subtasks covering: 1) Local storage caching system, 2) Data synchronization service for connectivity restoration, 3) Conflict resolution strategy implementation, 4) Offline mode indicators and user guidance, 5) Error handling for synchronization failures.",
+      "reasoning": "Offline functionality is one of the most complex features to implement correctly. It requires sophisticated state management, conflict resolution, and synchronization logic. The need to handle various connectivity scenarios and data conflicts makes this the most complex task."
+    },
+    {
+      "taskId": 10,
+      "taskTitle": "Implement Basic Analytics and Monitoring",
+      "complexityScore": 6,
+      "recommendedSubtasks": 4,
+      "expansionPrompt": "Break down the Analytics and Monitoring implementation into subtasks covering: 1) Client-side error logging with context capture, 2) Performance monitoring for key user interactions, 3) Usage tracking implementation with user consent, 4) Analytics dashboard for data visualization.",
+      "reasoning": "While implementing analytics requires integration with various parts of the application, the patterns are well-established. The complexity comes from ensuring proper data collection, user privacy considerations, and creating meaningful visualizations."
+    }
+  ]
+}

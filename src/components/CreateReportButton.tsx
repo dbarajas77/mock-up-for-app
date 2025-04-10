@@ -1,21 +1,47 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { TouchableOpacity, Text, StyleSheet } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import CreateReportModal from './CreateReportModal';
 
 type CreateReportButtonProps = {
-  onPress: () => void;
+  projectId: string;
 };
 
-const CreateReportButton = ({ onPress }: CreateReportButtonProps) => {
+const CreateReportButton = ({ projectId }: CreateReportButtonProps) => {
+  const [isModalOpen, setIsModalOpen] = useState(false);
+
+  const handleOpenModal = () => {
+    setIsModalOpen(true);
+  };
+
+  const handleCloseModal = () => {
+    setIsModalOpen(false);
+  };
+
+  const handleReportCreated = () => {
+    setIsModalOpen(false);
+    // Additional logic after report creation could go here
+  };
+
   return (
-    <TouchableOpacity 
-      style={styles.button}
-      onPress={onPress}
-      activeOpacity={0.8}
-    >
-      <Ionicons name="add-circle-outline" size={20} color="#fff" />
-      <Text style={styles.buttonText}>Create Report</Text>
-    </TouchableOpacity>
+    <>
+      <TouchableOpacity 
+        style={styles.button}
+        onPress={handleOpenModal}
+        activeOpacity={0.8}
+      >
+        <Ionicons name="add-circle-outline" size={20} color="#fff" />
+        <Text style={styles.buttonText}>Create Report</Text>
+      </TouchableOpacity>
+
+      {isModalOpen && (
+        <CreateReportModal 
+          projectId={projectId}
+          onClose={handleCloseModal}
+          onReportCreated={handleReportCreated}
+        />
+      )}
+    </>
   );
 };
 

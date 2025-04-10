@@ -10,7 +10,7 @@ import { RootStackParamList, MainTabParamList } from '../../navigation/types';
 import Header from '../../components/Header';
 import PhotoGrid from '../../components/PhotoGrid';
 import ContentWrapper from '../../components/ContentWrapper';
-import { AnnotationsModal } from '../../components/annotations/AnnotationsModal';
+import AnnotationsModal from '../../components/annotations/AnnotationsModal';
 
 // Services and Data
 import { getPhotos, uploadPhoto, Photo } from '../../services/photoService';
@@ -277,28 +277,28 @@ const PhotosScreen = () => {
 
   // Upload the selected file with projectId
   const uploadSelectedFile = async (file: File) => {
-    if (!projectId) {
-      alert('Cannot upload photo: No project ID available.');
-      return; 
-    }
-    
     try {
       setIsUploading(true);
-      console.log(`📤 Starting file upload for project: ${projectId}...`);
+      console.log(`📤 Starting file upload...`);
       
       const formData = new FormData();
       formData.append('file', file);
       formData.append('title', file.name);
       formData.append('description', '');
-      formData.append('projectId', projectId);
+      
+      // If projectId is available, add it
+      if (projectId) {
+        formData.append('projectId', projectId);
+      }
       
       const uploadedPhoto = await uploadPhoto(formData);
       console.log('✅ Photo uploaded successfully:', uploadedPhoto);
       
+      // Add the new photo to the list without showing an alert
       setPhotos(prevPhotos => [uploadedPhoto, ...prevPhotos]);
-      alert('Photo uploaded successfully!');
     } catch (error: any) {
       console.error('❌ Error uploading photo:', error);
+      // Keep the error alert since this is actually useful information
       alert(`Failed to upload photo: ${error.message || 'Please try again.'}`);
     } finally {
       setIsUploading(false);
@@ -312,10 +312,7 @@ const PhotosScreen = () => {
 
   // Trigger file input click
   const handleGalleryPress = () => {
-    if (!projectId) {
-      alert('Please select a project before uploading photos.');
-      return;
-    }
+    // Remove the projectId check since we're showing photos already
     fileInputRef.current?.click();
   };
 
@@ -447,15 +444,27 @@ const PhotosScreen = () => {
         showBackButton={!!projectId}
         projectName={projectName}
         projectId={projectId}
-        rightButtons={projectId ? (
-          <TouchableOpacity 
-            style={[styles.headerButton, isUploading && styles.disabledButton]}
-            onPress={handleGalleryPress} 
-            disabled={isUploading}
-          >
-            <Ionicons name="add-circle-outline" size={24} color={theme.colors.primary.main} /> 
-          </TouchableOpacity>
-        ) : null}
+        rightButtons={
+          <View style={styles.headerActionButtons}>
+            <TouchableOpacity 
+              style={[styles.headerUploadButton, isUploading && styles.disabledButton]}
+              onPress={handleGalleryPress} 
+              disabled={isUploading}
+            >
+              <Ionicons name="images-outline" size={18} color={theme.colors.primary.main} />
+              <Text style={styles.headerButtonText}>From Gallery</Text>
+            </TouchableOpacity>
+            
+            <TouchableOpacity 
+              style={[styles.headerUploadButton, isUploading && styles.disabledButton]}
+              onPress={handleCameraPress}
+              disabled={isUploading}
+            >
+              <Ionicons name="camera-outline" size={18} color={theme.colors.primary.main} />
+              <Text style={styles.headerButtonText}>Take Photo</Text>
+            </TouchableOpacity>
+          </View>
+        }
       />
       
       <ContentWrapper preserveState={true}>
@@ -562,11 +571,26 @@ const styles = StyleSheet.create({
     marginLeft: 8,
     color: theme.colors.primary.dark,
   },
-  headerButton: {
-    padding: 8, 
+  headerActionButtons: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
   },
-  disabledButton: {
-    opacity: 0.5,
+  headerUploadButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: 'transparent',
+    paddingVertical: 6,
+    paddingHorizontal: 10,
+    borderRadius: 6,
+    borderWidth: 1,
+    borderColor: theme.colors.primary.main,
+    gap: 4,
+  },
+  headerButtonText: {
+    color: theme.colors.primary.main,
+    fontSize: 12,
+    fontWeight: '500',
   },
   emptyText: {
     fontSize: 16,

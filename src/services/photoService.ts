@@ -16,7 +16,47 @@ export interface Photo {
   tasks?: string;  // JSON string: []
   notes?: string;  // JSON string: []
   drawings?: string;  // JSON string: {"lines": [], "circles": []}
+  orientation?: number; // EXIF orientation value (1-8)
 }
+
+// Helper function to extract EXIF orientation data from an image
+export const getImageOrientation = async (url: string): Promise<number | null> => {
+  try {
+    // For browser environment
+    if (typeof window !== 'undefined') {
+      return new Promise((resolve) => {
+        const img = new Image();
+        img.crossOrigin = 'Anonymous';
+        img.onload = function() {
+          // Create canvas and context
+          const canvas = document.createElement('canvas');
+          const ctx = canvas.getContext('2d');
+          
+          if (!ctx) {
+            resolve(null);
+            return;
+          }
+          
+          // Try to detect orientation by comparing width vs height
+          // This is a basic fallback when EXIF data isn't available
+          if (img.width < img.height) {
+            // Portrait orientation
+            resolve(6); // 90° rotation
+          } else {
+            // Landscape or square
+            resolve(1); // Normal orientation
+          }
+        };
+        img.onerror = () => resolve(null);
+        img.src = url;
+      });
+    }
+    return null;
+  } catch (error) {
+    console.error('Error getting image orientation:', error);
+    return null;
+  }
+};
 
 // Function to fetch photos from Supabase
 export const getPhotos = async (projectId?: string): Promise<Photo[]> => {
@@ -53,11 +93,40 @@ export const getPhotos = async (projectId?: string): Promise<Photo[]> => {
   }
 
   console.log(`✅ Fetched ${data?.length || 0} photos.`);
+  
+  // Process photos to ensure they have orientation data
   if (data && data.length > 0) {
     console.log('First photo:', JSON.stringify(data[0]));
+    
+    // Try to determine orientation for photos without it
+    // We'll do this in parallel for performance
+    const orientationPromises = data
+      .filter(photo => !photo.orientation && photo.url)
+      .map(async (photo) => {
+        try {
+          const orientation = await getImageOrientation(photo.url);
+          if (orientation) {
+            photo.orientation = orientation;
+            // Optionally update the database with the new orientation value
+            await updatePhoto(photo.id, { orientation });
+          }
+        } catch (err) {
+          console.error(`Error determining orientation for photo ${photo.id}:`, err);
+        }
+      });
+    
+    // Wait for all orientation checks to complete
+    if (orientationPromises.length > 0) {
+      try {
+        await Promise.all(orientationPromises);
+      } catch (err) {
+        console.error('Error processing photo orientations:', err);
+      }
+    }
   } else {
     console.log('No photos found for the given filter');
   }
+  
   return data || [];
 };
 
@@ -71,6 +140,24 @@ export const getPhotoById = async (id: string): Promise<Photo | null> => {
 
   if (error) {
     throw new Error(`Error fetching photo: ${error.message}`);
+  }
+
+  if (data) {
+    // If orientation is not set, try to determine it
+    if (!data.orientation && data.url) {
+      try {
+        const orientation = await getImageOrientation(data.url);
+        if (orientation) {
+          // Update the photo with the detected orientation
+          data.orientation = orientation;
+          
+          // Optionally save the orientation back to the database
+          await updatePhoto(id, { orientation });
+        }
+      } catch (err) {
+        console.error('Error determining photo orientation:', err);
+      }
+    }
   }
 
   return data;
@@ -129,6 +216,21 @@ export const uploadPhoto = async (formData: FormData): Promise<Photo> => {
 
     console.log('📍 Public URL generated:', publicUrl);
 
+    // Try to determine orientation of the uploaded image
+    let orientation: number | null = null;
+    try {
+      // Create a temporary URL for the file to analyze it
+      const tempUrl = URL.createObjectURL(file);
+      orientation = await getImageOrientation(tempUrl);
+      URL.revokeObjectURL(tempUrl); // Clean up
+      
+      if (orientation) {
+        console.log(`📏 Detected image orientation: ${orientation}`);
+      }
+    } catch (orientationError) {
+      console.warn('⚠️ Could not determine image orientation:', orientationError);
+    }
+
     // Create photo record in the database
     const { data, error } = await supabase
       .from('photos')
@@ -145,7 +247,8 @@ export const uploadPhoto = async (formData: FormData): Promise<Photo> => {
           date_taken: new Date().toISOString(),
           tasks: '[]',
           notes: '[]',
-          drawings: '{"lines":[],"circles":[]}'
+          drawings: '{"lines":[],"circles":[]}',
+          orientation: orientation || undefined // Save the detected orientation
         }
       ])
       .select()

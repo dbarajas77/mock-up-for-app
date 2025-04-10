@@ -15,10 +15,11 @@ import { Feather } from '@expo/vector-icons';
 import { RootStackParamList, MainTabParamList } from '../navigation/types'; 
 import Header from '../components/Header';
 import ContentWrapper from '../components/ContentWrapper';
-import DocumentItem from '../components/DocumentItem'; // Assuming this component exists
+import DocumentCard from '../components/documents/DocumentCard'; // Use DocumentCard instead of DocumentItem
 // import { EmptyState } from '../components/EmptyState'; // Assuming this component exists or use inline
-import { getDocuments, uploadDocument, Document } from '../services/documentService';
+import { getDocuments, uploadDocument, Document, getDocumentPreviewUrl, getDocumentById } from '../services/documentService';
 import { theme } from '../theme';
+import DocumentPreview from '../components/documents/DocumentPreview';
 
 // Define route prop type using MainTabParamList
 type DocumentsScreenRouteProp = RouteProp<MainTabParamList, 'DocumentsTab'>;
@@ -33,6 +34,10 @@ const DocumentsScreen = () => {
   const [error, setError] = useState<string | null>(null);
   const [isUploading, setIsUploading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
+  
+  // Add state for document previewing
+  const [selectedDocument, setSelectedDocument] = useState<Document | null>(null);
+  const [isPreviewModalVisible, setIsPreviewModalVisible] = useState(false);
 
   const fetchDocuments = useCallback(async () => {
     if (!projectId) {
@@ -75,12 +80,15 @@ const DocumentsScreen = () => {
 
   const uploadSelectedFile = async (file: File) => {
     if (!projectId) {
-      Alert.alert('Error', 'Cannot upload document: No project ID available.');
+      console.error('❌ Cannot upload document: Missing projectId in component state');
+      Alert.alert('Error', 'Cannot upload document: No project context found.');
       return;
     }
+    
+    console.log(`📤 Starting document upload with projectId: "${projectId}"`);
+    
     try {
       setIsUploading(true);
-      console.log(`📤 Starting document upload for project: ${projectId}...`);
       
       // For documents, we might need more metadata, but keep it simple for now
       const uploadData = {
@@ -89,11 +97,17 @@ const DocumentsScreen = () => {
         project_id: projectId,
       };
       
+      console.log('📄 Upload data:', { 
+        fileName: file.name, 
+        fileSize: file.size, 
+        fileType: file.type,
+        projectId
+      });
+      
       const uploadedDocument = await uploadDocument(uploadData);
       console.log('✅ Document uploaded successfully:', uploadedDocument);
       
       setDocuments(prevDocs => [uploadedDocument, ...prevDocs]); // Prepend new document
-      Alert.alert('Success', 'Document uploaded successfully!');
     } catch (error: any) {
       console.error('❌ Error uploading document:', error);
       Alert.alert('Error', `Failed to upload document: ${error.message || 'Please try again.'}`);
@@ -125,8 +139,92 @@ const DocumentsScreen = () => {
     };
   }, [handleFileSelected]);
 
+  // Handle document selection for preview
+  const handleDocumentPress = async (document: Document) => {
+    try {
+      setIsLoading(true);
+      setError(null);
+      
+      // Get the preview URL and update last viewed timestamp
+      const previewUrl = await getDocumentPreviewUrl(document.id);
+      console.log('Preview URL received:', { 
+        documentId: document.id,
+        previewUrl,
+        fileType: document.file_type
+      });
+      
+      await getDocumentById(document.id); // This updates last_viewed_at
+      
+      // Keep the original document data and add the preview URL separately
+      const documentWithPreview = {
+        ...document,
+        previewUrl
+      };
+      console.log('Setting document with preview:', documentWithPreview);
+      
+      setSelectedDocument(documentWithPreview);
+      setIsPreviewModalVisible(true);
+    } catch (err: any) {
+      setError('Failed to preview document. Please try again.');
+      console.error('Error previewing document:', err);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // Handle document actions
+  const handleDocumentDownload = (document: Document) => {
+    // Implement document download
+    window.open(document.file_url, '_blank');
+  };
+
+  const handleDocumentShare = (document: Document) => {
+    // Implement document sharing
+    Alert.alert('Share', `Sharing document: ${document.title}`);
+  };
+
+  const handleDocumentPrint = (document: Document) => {
+    // Implement document printing
+    if (document.previewUrl) {
+      const printWindow = window.open(document.previewUrl, '_blank');
+      if (printWindow) {
+        printWindow.addEventListener('load', () => {
+          printWindow.print();
+        });
+      }
+    }
+  };
+
+  const handleDocumentDelete = (document: Document) => {
+    // Implement document deletion
+    Alert.alert(
+      'Delete Document',
+      `Are you sure you want to delete "${document.title}"?`,
+      [
+        { text: 'Cancel', style: 'cancel' },
+        { 
+          text: 'Delete', 
+          style: 'destructive',
+          onPress: () => {
+            // Delete implementation here
+            console.log('Delete document:', document.id);
+          } 
+        }
+      ]
+    );
+  };
+
+  const handleDocumentCategoryEdit = (document: Document) => {
+    // Implement category editing
+    Alert.alert('Edit Category', `Edit category for document: ${document.title}`);
+  };
+
   const renderDocumentItem = ({ item }: { item: Document }) => (
-    <DocumentItem document={item} onPress={() => console.log('Navigate to doc details:', item.id)} />
+    <DocumentCard 
+      document={item} 
+      onPress={handleDocumentPress}
+      isSelected={false}
+    />
   );
 
   return (
@@ -186,9 +284,23 @@ const DocumentsScreen = () => {
             keyExtractor={(item) => item.id}
             renderItem={renderDocumentItem}
             contentContainerStyle={styles.listContainer}
+            numColumns={2}
+            columnWrapperStyle={styles.columnWrapper}
           />
         )}
       </ContentWrapper>
+
+      {/* Document Preview Modal */}
+      <DocumentPreview
+        document={selectedDocument}
+        visible={isPreviewModalVisible}
+        onClose={() => setIsPreviewModalVisible(false)}
+        onDownload={handleDocumentDownload}
+        onShare={handleDocumentShare}
+        onPrint={handleDocumentPrint}
+        onDelete={handleDocumentDelete}
+        onEditCategory={handleDocumentCategoryEdit}
+      />
     </SafeAreaView>
   );
 };
@@ -257,6 +369,10 @@ const styles = StyleSheet.create({
   },
   listContainer: {
     padding: 16,
+  },
+  columnWrapper: {
+    justifyContent: 'space-between',
+    marginBottom: 16,
   },
 });
 

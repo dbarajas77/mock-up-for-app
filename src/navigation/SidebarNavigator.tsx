@@ -6,9 +6,11 @@ import { MainTabParamList } from './types';
 import { ParamListBase, RouteProp } from '@react-navigation/native';
 import { useAuth } from '../contexts/AuthContext';
 import { useCurrentProject } from '../contexts/CurrentProjectContext';
+import ErrorBoundary from '../components/ErrorBoundary';
 
 // Import navigators
 import ProjectsStackNavigator from './ProjectsStackNavigator';
+import ReportsStackNavigator from './ReportsStackNavigator';
 
 // Import screens
 import PhotosScreen from '../screens/photos';
@@ -50,6 +52,7 @@ const CustomDrawerContent = ({ navigation, state }: DrawerContentComponentProps)
         { name: 'ProjectsTab', label: 'Projects', icon: 'folder-outline' },
         { name: 'PhotosTab', label: 'Photos', icon: 'images-outline' },
         { name: 'DocumentsTab', label: 'Documents', icon: 'document-text-outline' },
+        { name: 'ReportsTab', label: 'Reports', icon: 'bar-chart-outline' },
       ]
     },
     {
@@ -104,7 +107,7 @@ const CustomDrawerContent = ({ navigation, state }: DrawerContentComponentProps)
                   ]}
                   onPress={() => {
                     // Check if this is a tab that should have project context
-                    if ((item.name === 'PhotosTab' || item.name === 'DocumentsTab') && currentProject.id) {
+                    if ((item.name === 'PhotosTab' || item.name === 'DocumentsTab' || item.name === 'ReportsTab') && currentProject.id) {
                       // Pass the current project as params
                       navigation.navigate(item.name as keyof MainTabParamList, {
                         projectId: currentProject.id,
@@ -213,38 +216,41 @@ const SidebarNavigator = () => {
         
         {/* Content area with drawer underneath the header */}
         <View style={styles.contentContainer}>
-          <Drawer.Navigator
-            drawerContent={(props: DrawerContentComponentProps) => <CustomDrawerContent {...props} />}
-            screenOptions={{
-              headerShown: false,
-              drawerStyle: {
-                width: sidebarWidth,
-                backgroundColor: '#fff',
-                borderRightWidth: 1,
-                borderRightColor: '#e5e7eb',
-              },
-              drawerType: drawerType,
-              overlayColor: 'rgba(0,0,0,0.5)',
-              swipeEnabled: true,
-              swipeEdgeWidth: 50,
-            }}
-            screenListeners={{
-              state: (e) => {
-                const routes = e.data.state?.routes || [];
-                const index = e.data.state?.index || 0;
-                if (routes[index]) {
-                  const routeName = routes[index].name.replace('Tab', '');
-                  setCurrentRoute(routeName);
+          <ErrorBoundary>
+            <Drawer.Navigator
+              drawerContent={(props: DrawerContentComponentProps) => <CustomDrawerContent {...props} />}
+              screenOptions={{
+                headerShown: false,
+                drawerStyle: {
+                  width: sidebarWidth,
+                  backgroundColor: '#fff',
+                  borderRightWidth: 1,
+                  borderRightColor: '#e5e7eb',
+                },
+                drawerType: drawerType,
+                overlayColor: 'rgba(0,0,0,0.5)',
+                swipeEnabled: true,
+                swipeEdgeWidth: 50,
+              }}
+              screenListeners={{
+                state: (e) => {
+                  const routes = e.data.state?.routes || [];
+                  const index = e.data.state?.index || 0;
+                  if (routes[index]) {
+                    const routeName = routes[index].name.replace('Tab', '');
+                    setCurrentRoute(routeName);
+                  }
                 }
-              }
-            }}
-          >
-            <Drawer.Screen name="ProjectsTab" component={ProjectsStackNavigator} />
-            <Drawer.Screen name="PhotosTab" component={PhotosScreen} />
-            <Drawer.Screen name="DocumentsTab" component={DocumentsScreen} />
-            <Drawer.Screen name="UsersTab" component={UsersScreen} />
-            <Drawer.Screen name="SettingsTab" component={SettingsScreen} />
-          </Drawer.Navigator>
+              }}
+            >
+              <Drawer.Screen name="ProjectsTab" component={ProjectsStackNavigator} />
+              <Drawer.Screen name="PhotosTab" component={PhotosScreen} />
+              <Drawer.Screen name="DocumentsTab" component={DocumentsScreen} />
+              <Drawer.Screen name="ReportsTab" component={ReportsStackNavigator} />
+              <Drawer.Screen name="UsersTab" component={UsersScreen} />
+              <Drawer.Screen name="SettingsTab" component={SettingsScreen} />
+            </Drawer.Navigator>
+          </ErrorBoundary>
         </View>
       </View>
     </SidebarContext.Provider>
