@@ -152,28 +152,22 @@ const StatusTab = () => {
 
   // Function to render milestone status badge
   const renderStatusBadge = (status: string) => {
-    let bgColor, textColor, statusText;
+    let statusText;
     
     switch (status) {
       case 'completed':
-        bgColor = '#D1FAE5';
-        textColor = '#065F46';
         statusText = 'Completed';
         break;
       case 'in_progress':
-        bgColor = '#FEF3C7';
-        textColor = '#92400E';
         statusText = 'In Progress';
         break;
       default:
-        bgColor = '#F3F4F6';
-        textColor = '#4B5563';
         statusText = 'Pending';
     }
     
     return (
-      <View style={[styles.statusBadge, { backgroundColor: bgColor }]}>
-        <Text style={[styles.statusText, { color: textColor }]}>{statusText}</Text>
+      <View style={styles.statusBadge}>
+        <Text style={styles.statusText}>{statusText}</Text>
       </View>
     );
   };
@@ -681,13 +675,16 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   statusBadge: {
-    paddingHorizontal: 8,
+    paddingHorizontal: 10,
     paddingVertical: 4,
-    borderRadius: 4,
+    borderRadius: 12,
+    backgroundColor: '#E6F0FF',
+    marginLeft: 8,
   },
   statusText: {
     fontSize: 12,
     fontWeight: '500',
+    color: '#001532',
   },
   milestoneDetails: {
     flexDirection: 'row',

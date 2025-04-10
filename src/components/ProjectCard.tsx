@@ -221,23 +221,27 @@ const ProjectCard = ({ project, onPress, onDelete }: ProjectCardProps) => {
 
 const styles = StyleSheet.create({
   container: {
-    backgroundColor: '#ffffff',
-    borderRadius: 8,
-    padding: 16,
+    backgroundColor: 'rgba(240, 240, 240, 0.8)', // Light grey frosted background
+    borderRadius: 6, // Consistent border radius
+    padding: 20, // Increased padding
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 2,
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.15,
+    shadowRadius: 6,
+    elevation: 3,
     position: 'relative',
+    borderWidth: 2,
+    borderColor: '#00CC66', // Green border
+    backdropFilter: 'blur(5px)', // Frosted effect (works on web)
+    WebkitBackdropFilter: 'blur(5px)', // For Safari support
   },
   deleteButton: {
     position: 'absolute',
-    top: 8,
-    right: 8,
+    top: 12, // Adjusted for new padding
+    right: 12, // Adjusted for new padding
     padding: 8,
-    borderRadius: 4,
-    backgroundColor: '#fff0f0',
+    borderRadius: 6, // Consistent border radius
+    backgroundColor: 'rgba(255, 240, 240, 0.9)',
     zIndex: 10,
   },
   header: {
@@ -250,28 +254,29 @@ const styles = StyleSheet.create({
     color: '#333',
   },
   statusBadge: {
-    paddingHorizontal: 8,
-    paddingVertical: 2,
-    borderRadius: 12,
-    marginLeft: 4,
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 12, // Rounded corners for status pill
+    marginLeft: 6, // Slightly more margin
+    backgroundColor: '#E6F0FF', // Light blue background
   },
   statusBadgeActive: {
-    backgroundColor: '#3498db',
+    backgroundColor: '#E6F0FF', // Light blue
   },
   statusBadgePending: {
-    backgroundColor: '#f39c12',
+    backgroundColor: '#E6F0FF', // Light blue
   },
   statusBadgeCompleted: {
-    backgroundColor: '#2ecc71',
+    backgroundColor: '#E6F0FF', // Light blue
   },
   statusBadgeArchived: {
-    backgroundColor: '#95a5a6',
+    backgroundColor: '#E6F0FF', // Light blue
   },
   statusBadgeDefault: {
-    backgroundColor: '#bdc3c7',
+    backgroundColor: '#E6F0FF', // Light blue
   },
   statusText: {
-    color: '#fff',
+    color: '#001532', // Dark blue text
     fontSize: 12,
     fontWeight: '500',
   },
@@ -283,14 +288,14 @@ const styles = StyleSheet.create({
   },
   detailsRow: {
     flexDirection: 'row',
-    marginBottom: 16,
+    marginBottom: 20, // Increased margin
     flexWrap: 'wrap',
   },
   detailItem: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginRight: 16,
-    marginBottom: 8,
+    marginRight: 20, // Increased margin
+    marginBottom: 10, // Increased margin
   },
   detailLabel: {
     fontSize: 12,
@@ -302,9 +307,9 @@ const styles = StyleSheet.create({
     color: '#333',
   },
   priorityBadge: {
-    paddingHorizontal: 8,
-    paddingVertical: 2,
-    borderRadius: 12,
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 12, // Rounded corners
     borderWidth: 1,
   },
   priorityBadgeHigh: {
@@ -367,11 +372,15 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   modalContent: {
-    backgroundColor: '#fff',
-    borderRadius: 8,
-    padding: 20,
+    backgroundColor: 'rgba(240, 240, 240, 0.8)', // Light grey frosted background
+    borderRadius: 6, // Consistent border radius
+    padding: 20, // Increased padding
     width: '80%',
     maxWidth: 400,
+    borderWidth: 2,
+    borderColor: '#00CC66', // Green border
+    backdropFilter: 'blur(5px)', // Frosted effect
+    WebkitBackdropFilter: 'blur(5px)', // For Safari support
   },
   modalTitle: {
     fontSize: 18,

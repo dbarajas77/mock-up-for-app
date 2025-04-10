@@ -51,50 +51,92 @@ export const ProjectDetailsTab = () => {
   // --- Render actual project data --- 
 
   const renderOverviewCard = () => (
-    <Card>
-      <Text style={styles.cardTitle}>Project Overview</Text>
+    <View style={styles.card} className="card">
+      <Text style={styles.cardTitle} className="card-title">Project Overview</Text>
       <Text style={styles.description}>{project.description || 'No description provided.'}</Text>
-      {/* Progress bar might need data from tasks or status */}
-      {/* <View style={styles.progressContainer}>
-        <Text style={styles.progressLabel}>Overall Progress</Text>
-        <ProgressBar progress={project.progress || 0} /> // Example: using project.progress
-      </View> */}
-    </Card>
+    </View>
   );
 
-  const renderStatsCard = () => (
-    // Stats might need data aggregated from tasks, team, files etc.
-    // For now, let's keep it simple or hide it
-    <Card>
-      <Text style={styles.cardTitle}>Project Details</Text>
-      <View style={styles.detailRow}>
-        <Text style={styles.detailLabel}>Status:</Text>
-        <Text style={styles.detailValue}>{project.status || 'N/A'}</Text>
+  const renderDetailsCard = () => (
+    <View style={styles.card} className="card">
+      <Text style={styles.cardTitle} className="card-title">Project Details</Text>
+      
+      <View style={styles.detailItem} className="detail-item">
+        <Text style={styles.detailKey} className="detail-key">Status:</Text>
+        <Text style={styles.detailValue} className="detail-value">{project.status || 'N/A'}</Text>
       </View>
-      <View style={styles.detailRow}>
-        <Text style={styles.detailLabel}>Created At:</Text>
-        <Text style={styles.detailValue}>{
+      
+      <View style={styles.detailItem} className="detail-item">
+        <Text style={styles.detailKey} className="detail-key">Created:</Text>
+        <Text style={styles.detailValue} className="detail-value">{
           project.created_at ? new Date(project.created_at).toLocaleDateString() : 'N/A'
         }</Text>
       </View>
-      {/* Add more relevant details here */}
-    </Card>
+      
+      <View style={styles.detailItem} className="detail-item">
+        <Text style={styles.detailKey} className="detail-key">Priority:</Text>
+        <Text style={styles.detailValue} className="detail-value">{project.priority || 'N/A'}</Text>
+      </View>
+      
+      <View style={styles.detailItem} className="detail-item">
+        <Text style={styles.detailKey} className="detail-key">Timeline:</Text>
+        <Text style={styles.detailValue} className="detail-value">
+          {project.start_date ? new Date(project.start_date).toLocaleDateString() : 'N/A'} - 
+          {project.end_date ? new Date(project.end_date).toLocaleDateString() : 'N/A'}
+        </Text>
+      </View>
+    </View>
   );
 
-  const renderActivityCard = () => (
-    // Activity feed needs its own data source, remove for now
-    // <Card>
-    //   <Text style={styles.cardTitle}>Recent Activity</Text>
-    //   {/* Map through real activity data here */}
-    // </Card>
-    null // Hide activity card until data source is implemented
+  const renderLocationCard = () => (
+    <View style={styles.card} className="card">
+      <Text style={styles.cardTitle} className="card-title">Location</Text>
+      
+      <View style={styles.detailItem} className="detail-item">
+        <Text style={styles.detailKey} className="detail-key">Address:</Text>
+        <Text style={styles.detailValue} className="detail-value">{project.address1 || 'N/A'}</Text>
+      </View>
+      
+      {project.address2 && (
+        <View style={styles.detailItem} className="detail-item">
+          <Text style={styles.detailKey} className="detail-key"></Text>
+          <Text style={styles.detailValue} className="detail-value">{project.address2}</Text>
+        </View>
+      )}
+      
+      <View style={styles.detailItem} className="detail-item">
+        <Text style={styles.detailKey} className="detail-key">City/State:</Text>
+        <Text style={styles.detailValue} className="detail-value">
+          {project.city ? `${project.city}, ` : ''}
+          {project.state || 'N/A'} 
+          {project.zip ? ` ${project.zip}` : ''}
+        </Text>
+      </View>
+    </View>
+  );
+
+  const renderContactCard = () => (
+    <View style={styles.card} className="card">
+      <Text style={styles.cardTitle} className="card-title">Contact Information</Text>
+      
+      <View style={styles.detailItem} className="detail-item">
+        <Text style={styles.detailKey} className="detail-key">Name:</Text>
+        <Text style={styles.detailValue} className="detail-value">{project.contact_name || 'N/A'}</Text>
+      </View>
+      
+      <View style={styles.detailItem} className="detail-item">
+        <Text style={styles.detailKey} className="detail-key">Phone:</Text>
+        <Text style={styles.detailValue} className="detail-value">{project.contact_phone || 'N/A'}</Text>
+      </View>
+    </View>
   );
 
   return (
-    <ScrollView style={styles.container}>
+    <ScrollView style={styles.container} className="tab-content-area">
       {renderOverviewCard()}
-      {renderStatsCard()}
-      {renderActivityCard()}
+      {renderDetailsCard()}
+      {renderLocationCard()}
+      {renderContactCard()}
     </ScrollView>
   );
 };
@@ -102,10 +144,10 @@ export const ProjectDetailsTab = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    padding: 16,
-    backgroundColor: '#F5F5F5',
+    padding: 25,
+    backgroundColor: '#F9FAFB',
   },
-  centeredContainer: { // Style for loading/error/empty states
+  centeredContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
@@ -132,57 +174,48 @@ const styles = StyleSheet.create({
     color: theme.colors.text.secondary,
     fontSize: 16,
   },
+  card: {
+    backgroundColor: 'rgba(240, 240, 240, 0.8)',
+    borderRadius: 6,
+    padding: 20,
+    marginBottom: 20,
+    borderWidth: 2,
+    borderColor: '#00CC66',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.07,
+    shadowRadius: 3,
+    elevation: 2,
+  },
   cardTitle: {
     fontSize: 18,
-    fontWeight: 'bold',
-    marginBottom: 12,
-    color: theme.colors.text.primary, // Use theme color
+    fontWeight: '600',
+    color: '#001532',
+    marginBottom: 15,
   },
   description: {
     fontSize: 14,
-    color: theme.colors.text.secondary, // Use theme color
-    marginBottom: 16,
-    lineHeight: 20, // Improve readability
+    color: '#1f2937',
+    marginBottom: 10,
+    lineHeight: 20,
   },
-  // Remove progress styles for now
-  // progressContainer: {
-  //   marginTop: 8,
-  // },
-  // progressLabel: {
-  //   fontSize: 14,
-  //   color: theme.colors.text.secondary,
-  //   marginBottom: 8,
-  // },
-  // Remove stats styles for now
-  detailRow: { // Re-purposed from stats
+  detailItem: {
+    display: 'flex',
     flexDirection: 'row',
-    marginBottom: 8,
-  },
-  detailLabel: { // Re-purposed from stats
+    marginBottom: 10,
     fontSize: 14,
+  },
+  detailKey: {
+    color: '#6B7280',
+    width: 100,
+    flexShrink: 0,
     fontWeight: '500',
-    color: theme.colors.text.secondary,
-    width: 100, // Align labels
-  },
-  detailValue: { // Re-purposed from stats
     fontSize: 14,
-    color: theme.colors.text.primary,
-    flex: 1, // Allow value to take remaining space
   },
-  // Remove activity styles for now
-  // activityItem: {
-  //   marginBottom: 12,
-  //   paddingBottom: 12,
-  //   borderBottomWidth: 1,
-  //   borderBottomColor: theme.colors.border, // Use theme color
-  // },
-  // activityDescription: {
-  //   fontSize: 14,
-  //   color: theme.colors.text.primary,
-  // },
-  // activityDate: {
-  //   fontSize: 12,
-  //   color: theme.colors.text.secondary,
-  //   marginTop: 4,
-  // },
+  detailValue: {
+    color: '#1f2937',
+    fontWeight: '500',
+    fontSize: 14,
+    flex: 1,
+  },
 }); 

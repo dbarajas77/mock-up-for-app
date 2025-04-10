@@ -18,28 +18,28 @@ const ProjectHeader = () => {
   };
 
   return (
-    <SafeAreaView style={styles.safeArea}>
+    <SafeAreaView style={styles.safeArea} className="content-header">
       <View style={styles.container}>
         <View style={styles.headerRow}>
-          <TouchableOpacity
-            style={styles.backButton}
-            onPress={handleBackPress}
-          >
-            <Ionicons name="chevron-back" size={28} color="#2563eb" />
-            <Text style={styles.backText}>Projects</Text>
-          </TouchableOpacity>
+          <View style={styles.titleArea} className="title-area">
+            <TouchableOpacity
+              style={styles.backButton}
+              onPress={handleBackPress}
+              className="back-button"
+            >
+              <Ionicons name="chevron-back" size={28} color="#6B7280" />
+            </TouchableOpacity>
+            
+            <Text style={styles.title} numberOfLines={1} className="page-title">
+              {isLoading ? 'Loading...' : project?.name || 'Project Details'}
+            </Text>
+          </View>
           
           {project && (
-            <View style={[styles.statusBadge, { backgroundColor: getStatusColor(project.status) }]}>
+            <View style={styles.statusBadge} className="status-chip">
               <Text style={styles.statusText}>{project.status}</Text>
             </View>
           )}
-        </View>
-
-        <View style={styles.titleContainer}>
-          <Text style={styles.title} numberOfLines={1}>
-            {isLoading ? 'Loading...' : project?.name || 'Project Details'}
-          </Text>
         </View>
       </View>
     </SafeAreaView>
@@ -64,47 +64,44 @@ const getStatusColor = (status: string) => {
 const styles = StyleSheet.create({
   safeArea: {
     backgroundColor: '#fff',
+    flexShrink: 0, // Prevent header from shrinking
   },
   container: {
     backgroundColor: '#fff',
-    paddingVertical: 12,
-    paddingHorizontal: 16,
+    paddingVertical: 18,
+    paddingHorizontal: 25,
     borderBottomWidth: 1,
-    borderBottomColor: '#E0E0E0',
+    borderBottomColor: '#E5E7EB',
   },
   headerRow: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    marginBottom: 8,
+  },
+  titleArea: {
+    flexDirection: 'row',
+    alignItems: 'center',
   },
   backButton: {
     flexDirection: 'row',
     alignItems: 'center',
-    padding: 4,
-  },
-  backText: {
-    fontSize: 16,
-    color: '#2563eb',
-    marginLeft: -4,
-  },
-  titleContainer: {
-    marginTop: 4,
+    marginRight: 15,
   },
   title: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    color: '#111827',
+    fontSize: 20,
+    fontWeight: '600',
+    color: '#001532', // Dark blue
   },
   statusBadge: {
+    backgroundColor: '#E6F0FF', // Light blue background
     paddingHorizontal: 12,
     paddingVertical: 4,
-    borderRadius: 16,
+    borderRadius: 12, // Pill shape
   },
   statusText: {
     fontSize: 14,
     fontWeight: '500',
-    color: '#424242',
+    color: '#001532', // Dark blue text
   },
 });
 

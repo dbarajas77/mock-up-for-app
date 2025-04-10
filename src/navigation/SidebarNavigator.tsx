@@ -67,21 +67,22 @@ const CustomDrawerContent = ({ navigation, state }: DrawerContentComponentProps)
   return (
     <View style={styles.drawer}>
       {/* User Profile Section */}
-      <View style={styles.profileSection}>
+      <View style={styles.profileSection} className="sidebar-header">
         <TouchableOpacity 
           style={styles.profileButton}
           onPress={() => navigation.navigate('Profile')}
+          className="sidebar-profile-button"
         >
-          <View style={styles.profileAvatar}>
+          <View style={styles.profileAvatar} className="avatar">
             <Text style={styles.profileInitial}>
               {user?.email?.charAt(0) || 'U'}
             </Text>
           </View>
-          <View style={styles.profileInfo}>
-            <Text style={styles.profileName} numberOfLines={1}>
+          <View style={styles.profileInfo} className="user-info">
+            <Text style={styles.profileName} numberOfLines={1} className="user-email">
               {user?.email || 'User'}
             </Text>
-            <Text style={styles.profileRole} numberOfLines={1}>
+            <Text style={styles.profileRole} numberOfLines={1} className="user-role">
               {'Member'}
             </Text>
           </View>
@@ -89,10 +90,10 @@ const CustomDrawerContent = ({ navigation, state }: DrawerContentComponentProps)
         </TouchableOpacity>
       </View>
 
-      <View style={styles.navItems}>
+      <View style={styles.navItems} className="sidebar-nav">
         {navSections.map((section, sectionIndex) => (
           <View key={`section-${sectionIndex}`} style={styles.navSection}>
-            <Text style={styles.sectionTitle}>{section.title}</Text>
+            <Text style={styles.sectionTitle} className="sidebar-section-header">{section.title}</Text>
             {section.items.map((item) => {
               // Compare route name directly with the current item
               const currentRouteName = state.routes[state.index]?.name;
@@ -105,6 +106,7 @@ const CustomDrawerContent = ({ navigation, state }: DrawerContentComponentProps)
                     styles.navItem,
                     isFocused ? styles.activeNavItem : null
                   ]}
+                  className={`sidebar-nav-item ${isFocused ? 'active' : ''}`}
                   onPress={() => {
                     // Check if this is a tab that should have project context
                     if ((item.name === 'PhotosTab' || item.name === 'DocumentsTab' || item.name === 'ReportsTab') && currentProject.id) {
@@ -123,6 +125,8 @@ const CustomDrawerContent = ({ navigation, state }: DrawerContentComponentProps)
                     name={item.icon as any}
                     size={22}
                     color={isFocused ? '#ffffff' : '#4b5563'}
+                    style={styles.navIcon}
+                    className="icon"
                   />
                   <Text style={[
                     styles.navLabel,
@@ -141,8 +145,9 @@ const CustomDrawerContent = ({ navigation, state }: DrawerContentComponentProps)
       <TouchableOpacity 
         style={styles.logoutButton}
         onPress={signOut}
+        className="sidebar-footer sidebar-nav-item"
       >
-        <Ionicons name="log-out-outline" size={20} color="#ef4444" />
+        <Ionicons name="log-out-outline" size={20} color="#ef4444" className="icon" />
         <Text style={styles.logoutText}>Logout</Text>
       </TouchableOpacity>
     </View>
@@ -269,46 +274,55 @@ const styles = StyleSheet.create({
   },
   drawer: {
     flex: 1,
-    paddingTop: 20,
-    backgroundColor: '#ffffff',
+    paddingTop: 0, // Remove top padding
+    backgroundColor: '#001532', // Dark blue background
   },
   navItems: {
     flex: 1,
+    paddingTop: 15,
+    paddingBottom: 15,
+    overflow: 'auto',
   },
   navSection: {
     marginBottom: 16,
   },
   sectionTitle: {
-    paddingHorizontal: 16,
-    paddingVertical: 8,
+    paddingHorizontal: 20,
+    paddingVertical: 5,
+    paddingTop: 15,
     fontSize: 12,
     fontWeight: '600',
-    color: '#6b7280',
+    color: '#a0aec0', // Muted color on dark bg
     textTransform: 'uppercase',
-    letterSpacing: 0.5,
+    letterSpacing: 0.05,
   },
   navItem: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingVertical: 12,
-    paddingHorizontal: 16,
-    borderRadius: 4,
-    marginHorizontal: 8,
+    paddingVertical: 10,
+    paddingHorizontal: 20,
+    borderRadius: 6,
+    marginHorizontal: 10,
     marginVertical: 2,
+    borderLeftWidth: 4,
+    borderLeftColor: 'transparent', // For active indicator
   },
   activeNavItem: {
-    backgroundColor: '#3498db',
+    backgroundColor: 'rgba(230, 240, 255, 0.05)', // Subtle highlight
     borderLeftWidth: 4,
-    borderLeftColor: '#3498db',
+    borderLeftColor: '#00CC66', // Green active indicator
+  },
+  navIcon: {
+    display: 'none', // Hide icons
   },
   navLabel: {
-    marginLeft: 16,
+    marginLeft: 0,
     fontSize: 16,
-    color: '#333',
+    color: '#FFFFFF', // White text
   },
   activeNavLabel: {
     color: '#ffffff',
-    fontWeight: '600',
+    fontWeight: '600', // Make active text bold
   },
   appHeader: {
     height: 60,
@@ -329,52 +343,33 @@ const styles = StyleSheet.create({
     shadowRadius: 3.84,
   },
   appTitle: {
-    color: '#4CAF50',
+    color: '#00CC66', // Green color
     fontSize: 20,
     fontWeight: 'bold',
     textDecorationStyle: 'solid',
   },
-  bottomSection: {
-    paddingVertical: 16,
-    paddingHorizontal: 16,
-    borderTopWidth: 1,
-    borderTopColor: '#e5e7eb',
-  },
-  helpButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingVertical: 12,
-    paddingHorizontal: 16,
-    borderRadius: 4,
-    backgroundColor: '#f7f7f7',
-  },
-  helpLabel: {
-    marginLeft: 16,
-    fontSize: 16,
-    color: '#333',
-  },
   profileSection: {
-    paddingHorizontal: 16,
+    paddingHorizontal: 20,
     paddingVertical: 20,
     borderBottomWidth: 1,
-    borderBottomColor: '#e5e7eb',
+    borderBottomColor: 'rgba(255, 255, 255, 0.1)', // Subtle border
   },
   profileButton: {
     flexDirection: 'row',
     alignItems: 'center',
   },
   profileAvatar: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: '#002b69',
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: '#4A5568', // Placeholder color from example
     justifyContent: 'center',
     alignItems: 'center',
     marginRight: 12,
   },
   profileInitial: {
     color: '#ffffff',
-    fontSize: 18,
+    fontSize: 16,
     fontWeight: 'bold',
   },
   profileInfo: {
@@ -382,21 +377,21 @@ const styles = StyleSheet.create({
   },
   profileName: {
     fontSize: 16,
-    fontWeight: 'bold',
-    color: '#001532',
+    fontWeight: '600',
+    color: '#FFFFFF', // White text
     textDecorationStyle: 'solid',
   },
   profileRole: {
     fontSize: 12,
-    color: '#9ca3af',
+    color: '#a0aec0', // Muted text color from example
   },
   logoutButton: {
     flexDirection: 'row',
     alignItems: 'center',
     paddingHorizontal: 16,
-    paddingVertical: 12,
+    paddingVertical: 15,
     borderTopWidth: 1,
-    borderTopColor: '#e5e7eb',
+    borderTopColor: 'rgba(255, 255, 255, 0.1)', // Subtle border
     marginTop: 'auto',
   },
   logoutText: {

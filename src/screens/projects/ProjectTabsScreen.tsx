@@ -45,53 +45,61 @@ const ProjectTabsContent = ({ projectId }: { projectId: string }) => {
   }, [project?.id, project?.name, setCurrentProject]); // Only depend on the id and name
 
   return (
-    <View style={{ flex: 1 }}>
+    <View style={{ flex: 1 }} className="main-content">
       <ProjectHeader />
-      <Tab.Navigator
-        screenOptions={{
-          tabBarStyle: {
-            backgroundColor: '#ffffff',
-            elevation: 0,
-            shadowOpacity: 0,
-          },
-          tabBarIndicatorStyle: {
-            backgroundColor: '#2563eb',
-            height: 3,
-          },
-          tabBarLabelStyle: {
-            textTransform: 'none',
-            fontSize: 14,
-            fontWeight: '500',
-          },
-          tabBarActiveTintColor: '#2563eb',
-          tabBarInactiveTintColor: '#6b7280',
-        }}
-      >
-        <Tab.Screen 
-          name="Details" 
-          component={ProjectDetailsTab}
-          options={{ title: 'Details' }}
-          initialParams={{ projectId }}
-        />
-        <Tab.Screen 
-          name="Team" 
-          options={{ title: 'Team' }}
+      <View className="content-tabs">
+        <Tab.Navigator
+          screenOptions={{
+            tabBarStyle: {
+              backgroundColor: '#ffffff',
+              elevation: 0,
+              shadowOpacity: 0,
+              padding: 0
+            },
+            tabBarIndicatorStyle: {
+              backgroundColor: '#00CC66',
+              height: 3, // Match the provided CSS
+            },
+            tabBarLabelStyle: {
+              textTransform: 'none',
+              fontSize: 14,
+              fontWeight: '500',
+              transition: 'color 0.3s ease',
+            },
+            tabBarActiveTintColor: '#001532',
+            tabBarInactiveTintColor: '#6b7280',
+            tabBarItemStyle: {
+              transition: 'all 0.3s ease',
+              padding: 15,
+            },
+          }}
         >
-          {() => <ProjectTeamTab projectId={projectId} />}
-        </Tab.Screen>
-        <Tab.Screen 
-          name="Tasks" 
-          component={ProjectTasksTab}
-          options={{ title: 'Tasks' }}
-          initialParams={{ projectId }}
-        />
-        <Tab.Screen 
-          name="Status" 
-          component={ProjectStatusTab}
-          options={{ title: 'Status' }}
-          initialParams={{ projectId }}
-        />
-      </Tab.Navigator>
+          <Tab.Screen 
+            name="Details" 
+            component={ProjectDetailsTab}
+            options={{ title: 'Details' }}
+            initialParams={{ projectId }}
+          />
+          <Tab.Screen 
+            name="Team" 
+            options={{ title: 'Team' }}
+          >
+            {() => <ProjectTeamTab projectId={projectId} />}
+          </Tab.Screen>
+          <Tab.Screen 
+            name="Tasks" 
+            component={ProjectTasksTab}
+            options={{ title: 'Tasks' }}
+            initialParams={{ projectId }}
+          />
+          <Tab.Screen 
+            name="Status" 
+            component={ProjectStatusTab}
+            options={{ title: 'Status' }}
+            initialParams={{ projectId }}
+          />
+        </Tab.Navigator>
+      </View>
     </View>
   );
 };

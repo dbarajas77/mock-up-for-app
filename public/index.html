@@ -15,6 +15,233 @@
       display: flex;
       flex-direction: column;
     }
+    
+    /* Add global styling for frosted glass effect */
+    .frosted-glass {
+      background-color: rgba(240, 240, 240, 0.8);
+      backdrop-filter: blur(5px);
+      -webkit-backdrop-filter: blur(5px);
+      border: 2px solid #00CC66;
+      border-radius: 6px;
+    }
+    
+    /* Hide sidebar icons */
+    .sidebar-nav-item .icon {
+      display: none !important;
+    }
+    
+    /* Style active tabs */
+    .active-tab {
+      border-bottom: 4px solid #00CC66 !important;
+      transition: all 0.3s ease;
+    }
+    
+    /* Style status pills */
+    .status-pill {
+      background-color: #E6F0FF !important;
+      color: #001532 !important;
+      border-radius: 12px !important;
+      padding: 4px 10px !important;
+    }
+    
+    /* Add whitespace and consistent styling */
+    .card {
+      padding: 20px !important;
+      border-radius: 6px !important;
+      margin-bottom: 20px !important;
+    }
+    
+    /* Add styling for sidebar navigation items */
+    .sidebar-nav-item {
+      transition: background-color 0.2s ease-in-out, color 0.2s ease-in-out !important;
+    }
+    
+    .sidebar-nav-item:hover {
+      background-color: rgba(230, 240, 255, 0.1) !important;
+    }
+    
+    .sidebar-nav-item.active {
+      background-color: rgba(230, 240, 255, 0.05) !important;
+    }
+    
+    /* Sidebar Header Styling */
+    .sidebar-header {
+      padding: 20px !important;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.1) !important;
+    }
+    
+    .sidebar-header .avatar {
+      background-color: #4A5568 !important;
+    }
+    
+    .sidebar-header .user-email {
+      color: #FFFFFF !important;
+      font-weight: 600 !important;
+    }
+    
+    .sidebar-header .user-role {
+      color: #a0aec0 !important;
+      font-size: 0.8rem !important;
+    }
+    
+    /* Sidebar Section Headers */
+    .sidebar-section-header {
+      padding: 15px 20px 5px 20px !important;
+      color: #a0aec0 !important;
+      letter-spacing: 0.05em !important;
+    }
+    
+    /* Sidebar Footer */
+    .sidebar-footer {
+      padding: 15px 10px !important;
+      border-top: 1px solid rgba(255, 255, 255, 0.1) !important;
+      margin-top: auto !important;
+    }
+    
+    /* --- Main Content Area --- */
+    .main-content {
+      flex-grow: 1 !important;
+      background-color: #f9fafb !important; /* Light grey background */
+      height: 100vh !important; /* Full viewport height */
+      display: flex !important;
+      flex-direction: column !important;
+      overflow: hidden !important; /* Prevent content overflow from causing double scrollbars */
+    }
+
+    /* --- Header --- */
+    .content-header {
+      display: flex !important;
+      justify-content: space-between !important;
+      align-items: center !important;
+      padding: 18px 25px !important;
+      background-color: #FFFFFF !important;
+      border-bottom: 1px solid #E5E7EB !important;
+      flex-shrink: 0 !important; /* Prevent header from shrinking */
+    }
+
+    .content-header .title-area {
+      display: flex !important;
+      align-items: center !important;
+    }
+
+    .content-header .back-button {
+      margin-right: 15px !important;
+      color: #6B7280 !important;
+      font-size: 1.2rem !important;
+      cursor: pointer !important;
+    }
+
+    .content-header .page-title {
+      font-size: 1.3rem !important;
+      font-weight: 600 !important;
+      color: #001532 !important; /* Dark blue */
+    }
+
+    .content-header .status-chip {
+      background-color: #E6F0FF !important; /* Light blue */
+      color: #001532 !important; /* Dark blue */
+      padding: 4px 12px !important;
+      border-radius: 12px !important; /* Pill shape */
+      font-size: 0.8rem !important;
+      font-weight: 500 !important;
+    }
+
+    /* --- Tabs --- */
+    .content-tabs {
+      padding: 0 25px !important;
+      background-color: #FFFFFF !important;
+      border-bottom: 1px solid #E5E7EB !important;
+      flex-shrink: 0 !important; /* Prevent tabs from shrinking */
+    }
+
+    .tab-list {
+      display: flex !important;
+      list-style: none !important;
+      margin: 0 !important;
+      padding: 0 !important;
+    }
+
+    .tab-item button {
+      padding: 15px 18px !important;
+      margin-right: 10px !important;
+      font-size: 0.9rem !important;
+      font-weight: 500 !important;
+      color: #6B7280 !important; /* Muted text */
+      background: none !important;
+      border: none !important;
+      border-bottom: 3px solid transparent !important;
+      cursor: pointer !important;
+      transition: color 0.2s ease, border-color 0.2s ease !important;
+      margin-bottom: -1px !important; /* Align border with container's border */
+    }
+
+    .tab-item button:hover {
+      color: #001532 !important; /* Dark blue */
+    }
+
+    .tab-item button.active {
+      color: #001532 !important; /* Dark blue */
+      border-bottom-color: #00CC66 !important; /* Green underline */
+      font-weight: 600 !important;
+    }
+
+    /* --- Content Area Below Tabs --- */
+    .tab-content-area {
+      padding: 25px !important;
+      overflow-y: auto !important; /* Enable scrolling for content */
+      flex-grow: 1 !important; /* Takes remaining vertical space */
+    }
+
+    /* --- Cards --- */
+    .card {
+      background-color: rgba(240, 240, 240, 0.8) !important; /* Light grey with frosted effect */
+      border: 2px solid #00CC66 !important; /* Green outline */
+      border-radius: 6px !important;
+      margin-bottom: 20px !important;
+      box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.07), 0 1px 2px 0 rgba(0, 0, 0, 0.04) !important;
+      padding: 20px !important;
+      backdrop-filter: blur(5px) !important; /* Additional frosted effect */
+      -webkit-backdrop-filter: blur(5px) !important;
+    }
+
+    .card-title {
+      font-size: 1.1rem !important;
+      font-weight: 600 !important;
+      color: #001532 !important; /* Dark blue */
+      margin-bottom: 15px !important;
+    }
+
+    .card p {
+      margin-bottom: 10px !important;
+      color: #1f2937 !important; /* Slightly softer than pure blue for body text */
+    }
+
+    .detail-item {
+      display: flex !important;
+      margin-bottom: 10px !important;
+      font-size: 0.9rem !important;
+    }
+
+    .detail-key {
+      color: #6B7280 !important; /* Muted text */
+      width: 100px !important; /* Adjust as needed for alignment */
+      flex-shrink: 0 !important;
+      font-weight: 500 !important;
+    }
+
+    .detail-value {
+      color: #1f2937 !important; /* Text dark */
+      font-weight: 500 !important;
+    }
+    
+    /* Add color scheme variables */
+    :root {
+      --primary-green: #00CC66;
+      --primary-dark-blue: #001532;
+      --light-blue: #E6F0FF;
+      --light-grey: rgba(240, 240, 240, 0.8);
+    }
+    
     /* Add responsive breakpoints based on project requirements */
     @media (min-width: 320px) { /* --mobile-sm */ }
     @media (min-width: 480px) { /* --mobile */ }

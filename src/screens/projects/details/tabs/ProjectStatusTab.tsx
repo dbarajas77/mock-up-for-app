@@ -20,7 +20,6 @@ import { theme } from '../../../../theme';
 
 // Import extracted components
 import TaskOverview from './components/TaskOverview';
-import TeamActivity from './components/TeamActivity';
 import MilestoneTimeline from './components/MilestoneTimeline';
 import MilestoneList from './components/MilestoneList';
 import AddEditMilestoneModal from './components/AddEditMilestoneModal';
@@ -107,6 +106,9 @@ const ProjectStatusTab = () => {
   const [projectPriority, setProjectPriority] = useState<ProjectPriority>(
     (hasProjectPriority(project) ? project.priority as ProjectPriority : 'medium')
   );
+
+  // Add this to the state variables near the top of the component
+  const [milestonesCollapsed, setMilestonesCollapsed] = useState(false);
 
   // Fetch milestones when project changes
   useEffect(() => {
@@ -955,74 +957,247 @@ const ProjectStatusTab = () => {
 
   return (
     <ScrollView style={tabStyles.container}>
-      {/* Project Milestones Section */}
-      <View style={tabStyles.section}>
-        <View style={tabStyles.sectionHeader}>
-          <Text style={tabStyles.sectionTitle}>Project Milestones</Text>
-          <View style={[tabStyles.headerButtons, { flexDirection: 'row', alignItems: 'center' }]}>
-            {/* Status Button */}
-            {project && (
-              <TouchableOpacity
-                style={[tabStyles.headerButton, { backgroundColor: getStatusColor(projectStatus), marginRight: 8 }]}
-                onPress={() => {
-                  // Cycle through statuses
-                  const statuses: ProjectStatus[] = ['active', 'completed', 'archived'];
-                  const currentIndex = statuses.indexOf(projectStatus);
-                  const nextIndex = (currentIndex + 1) % statuses.length;
-                  handleProjectStatusChange(statuses[nextIndex]);
-                }}
-              >
-                <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-                  <Text style={[tabStyles.headerButtonText, { color: '#fff' }]}>
-                    {formatText(projectStatus)}
-                </Text>
-                </View>
-              </TouchableOpacity>
-            )}
-            
-            {/* Priority Button */}
-            {project && (
-              <TouchableOpacity
-                style={[tabStyles.headerButton, { backgroundColor: getPriorityColor(projectPriority), marginRight: 8 }]}
-                onPress={() => {
-                  // Cycle through priorities
-                  const priorities: ProjectPriority[] = ['high', 'medium', 'low'];
-                  const currentIndex = priorities.indexOf(projectPriority);
-                  const nextIndex = (currentIndex + 1) % priorities.length;
-                  handleProjectPriorityChange(priorities[nextIndex]);
-                }}
-              >
-                <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-                  <Text style={[tabStyles.headerButtonText, { color: '#fff' }]}>
-                    {formatText(projectPriority)}
-                  </Text>
+      {/* Project Milestones Header */}
+      <Text style={tabStyles.sectionTitle}>Project Milestones</Text>
+      
+      {/* Status Cards Row - Interactive Version */}
+      <View style={tabStyles.statusCardsContainer}>
+        {/* Project Timeline Card - First in order */}
+        <View style={tabStyles.statusCard}>
+          <View style={tabStyles.statusBadgeContainer}>
+            <View style={[tabStyles.statusBadge, tabStyles.activeBadge]}>
+              <Text style={[tabStyles.statusBadgeText, tabStyles.activeText]}>Timeline</Text>
+            </View>
           </View>
-              </TouchableOpacity>
-            )}
-
-            {/* Timeline Button */}
-            <TouchableOpacity
-              style={[tabStyles.headerButton, tabStyles.timelineButton]}
-              onPress={() => {
-                if (projectDateRange) {
-                  setStartDate(parseISO(projectDateRange.start_date));
-                  setEndDate(parseISO(projectDateRange.end_date));
-                } else {
-                  // Reset to defaults if no range exists yet
-                  setStartDate(new Date());
-                  setEndDate(addDays(new Date(), 30));
-                }
-                setIsTimelineSetupModalVisible(true);
-              }}
+          <Text style={tabStyles.statusLabel}>Project Timeline</Text>
+          <Text style={tabStyles.statusValue}>
+            {projectDateRange ? 
+              `${formatDateWithTimezone(projectDateRange.start_date, 'MMM d, yyyy').substring(0, 6)}...` : 
+              'Not set'}
+          </Text>
+          <TouchableOpacity 
+            style={{
+              marginTop: 12,
+              backgroundColor: '#E6F0FF',
+              padding: 8,
+              borderRadius: 4,
+              alignItems: 'center',
+            }}
+            onPress={() => {
+              if (projectDateRange) {
+                setStartDate(parseISO(projectDateRange.start_date));
+                setEndDate(parseISO(projectDateRange.end_date));
+              } else {
+                setStartDate(new Date());
+                setEndDate(addDays(new Date(), 30));
+              }
+              setIsTimelineSetupModalVisible(true);
+            }}
+          >
+            <Text style={{color: '#2563EB', fontSize: 12, fontWeight: '500'}}>
+              {projectDateRange ? 'Edit Timeline' : 'Set Timeline'}
+            </Text>
+          </TouchableOpacity>
+        </View>
+        
+        {/* Project Status Card - Second in order */}
+        <View style={[
+          tabStyles.statusCard,
+          projectStatus === 'active' ? tabStyles.activeCardBg : 
+          projectStatus === 'completed' ? tabStyles.completedCardBg : 
+          tabStyles.archivedCardBg
+        ]}>
+          {/* Status options at the top */}
+          <View style={tabStyles.statusOptionsContainer}>
+            <TouchableOpacity 
+              style={[
+                tabStyles.statusOption, 
+                tabStyles.activeOption,
+                projectStatus === 'active' && tabStyles.selectedOption,
+                projectStatus === 'active' && tabStyles.selectedActiveOption
+              ]}
+              onPress={() => handleProjectStatusChange('active')}
             >
-              <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-                <Feather name="calendar" size={16} color={theme.colors.primary.main} />
-                <Text style={tabStyles.headerButtonText}>
-                  {projectDateRange ? 'Timeline' : 'Set Timeline'}
-                </Text>
-              </View>
+              <Text style={tabStyles.statusOptionText}>Active</Text>
             </TouchableOpacity>
-            
+            <TouchableOpacity 
+              style={[
+                tabStyles.statusOption, 
+                tabStyles.completedOption,
+                projectStatus === 'completed' && tabStyles.selectedOption,
+                projectStatus === 'completed' && tabStyles.selectedCompletedOption
+              ]}
+              onPress={() => handleProjectStatusChange('completed')}
+            >
+              <Text style={tabStyles.statusOptionText}>Completed</Text>
+            </TouchableOpacity>
+            <TouchableOpacity 
+              style={[
+                tabStyles.statusOption, 
+                tabStyles.archivedOption,
+                projectStatus === 'archived' && tabStyles.selectedOption,
+                projectStatus === 'archived' && tabStyles.selectedArchivedOption
+              ]}
+              onPress={() => handleProjectStatusChange('archived')}
+            >
+              <Text style={tabStyles.statusOptionText}>Archived</Text>
+            </TouchableOpacity>
+          </View>
+          
+          <View style={tabStyles.statusBadgeContainer}>
+            <View style={[
+              tabStyles.statusBadge, 
+              projectStatus === 'active' ? tabStyles.activeBadge : 
+              projectStatus === 'completed' ? tabStyles.completedBadge : 
+              tabStyles.archivedBadge
+            ]}>
+              <Text style={[
+                tabStyles.statusBadgeText, 
+                projectStatus === 'active' ? tabStyles.activeText : 
+                projectStatus === 'completed' ? tabStyles.completedText : 
+                tabStyles.archivedText
+              ]}>
+                {formatText(projectStatus)}
+              </Text>
+            </View>
+          </View>
+          <Text style={tabStyles.statusLabel}>Project Status</Text>
+          <Text style={tabStyles.statusValue}>
+            {projectStatus === 'active' ? 'Active' : 
+             projectStatus === 'completed' ? 'Completed' : 'No longer active'}
+          </Text>
+        </View>
+        
+        {/* Priority Level Card - Third in order */}
+        <View style={[
+          tabStyles.statusCard,
+          projectPriority === 'high' ? tabStyles.highCardBg : 
+          projectPriority === 'medium' ? tabStyles.mediumCardBg : 
+          tabStyles.lowCardBg
+        ]}>
+          {/* Priority options at the top */}
+          <View style={tabStyles.statusOptionsContainer}>
+            <TouchableOpacity 
+              style={[
+                tabStyles.statusOption, 
+                tabStyles.highOption,
+                projectPriority === 'high' && tabStyles.selectedOption,
+                projectPriority === 'high' && tabStyles.selectedHighOption
+              ]}
+              onPress={() => handleProjectPriorityChange('high')}
+            >
+              <Text style={tabStyles.statusOptionText}>High</Text>
+            </TouchableOpacity>
+            <TouchableOpacity 
+              style={[
+                tabStyles.statusOption, 
+                tabStyles.mediumOption,
+                projectPriority === 'medium' && tabStyles.selectedOption,
+                projectPriority === 'medium' && tabStyles.selectedMediumOption
+              ]}
+              onPress={() => handleProjectPriorityChange('medium')}
+            >
+              <Text style={tabStyles.statusOptionText}>Medium</Text>
+            </TouchableOpacity>
+            <TouchableOpacity 
+              style={[
+                tabStyles.statusOption, 
+                tabStyles.lowOption,
+                projectPriority === 'low' && tabStyles.selectedOption,
+                projectPriority === 'low' && tabStyles.selectedLowOption
+              ]}
+              onPress={() => handleProjectPriorityChange('low')}
+            >
+              <Text style={tabStyles.statusOptionText}>Low</Text>
+            </TouchableOpacity>
+          </View>
+          
+          <View style={tabStyles.statusBadgeContainer}>
+            <View style={[
+              tabStyles.statusBadge, 
+              projectPriority === 'high' ? tabStyles.highPriorityBadge : 
+              projectPriority === 'medium' ? tabStyles.mediumPriorityBadge : 
+              tabStyles.lowPriorityBadge
+            ]}>
+              <Text style={[
+                tabStyles.statusBadgeText, 
+                projectPriority === 'high' ? tabStyles.highPriorityText : 
+                projectPriority === 'medium' ? tabStyles.mediumPriorityText : 
+                tabStyles.lowPriorityText
+              ]}>
+                {formatText(projectPriority)}
+              </Text>
+            </View>
+          </View>
+          <Text style={tabStyles.statusLabel}>Priority Level</Text>
+          <Text style={tabStyles.statusValue}>
+            {formatText(projectPriority)} priority
+          </Text>
+        </View>
+      </View>
+      
+      {/* Timeline Progress Bar */}
+      <View style={tabStyles.progressCard}>
+        <View style={tabStyles.progressBarContainer}>
+          <View style={[tabStyles.progressBarFill, { width: `${milestoneProgress}%` }]} />
+        </View>
+        <View style={tabStyles.progressMarkers}>
+          <View style={tabStyles.progressMarkerItem}>
+            <Text style={tabStyles.progressMarkerText}>0%</Text>
+          </View>
+          <View style={tabStyles.progressMarkerItem}>
+            <Text style={tabStyles.progressMarkerText}>25%</Text>
+          </View>
+          <View style={tabStyles.progressMarkerItem}>
+            <Text style={tabStyles.progressMarkerText}>50%</Text>
+          </View>
+          <View style={tabStyles.progressMarkerItem}>
+            <Text style={tabStyles.progressMarkerText}>75%</Text>
+          </View>
+          <View style={tabStyles.progressMarkerItem}>
+            <Text style={tabStyles.progressMarkerText}>100%</Text>
+          </View>
+        </View>
+      </View>
+      
+      {/* Compact Progress Indicators */}
+      <View style={tabStyles.compactProgressContainer}>
+        {/* Progress Percentage Indicator */}
+        <View style={[tabStyles.progressIndicatorCard, tabStyles.progressIndicatorBlue]}>
+          <View style={tabStyles.indicatorContent}>
+            <View style={tabStyles.indicatorRow}>
+              <Text style={tabStyles.indicatorValue}>{milestoneProgress}%</Text>
+            </View>
+            <Text style={tabStyles.indicatorLabel}>Project Progress</Text>
+          </View>
+        </View>
+        
+        {/* Milestones Completion Indicator */}
+        <View style={[tabStyles.progressIndicatorCard, tabStyles.progressIndicatorGreen]}>
+          <View style={tabStyles.indicatorContent}>
+            <View style={tabStyles.indicatorRow}>
+              <Feather name="check" size={16} color="#10B981" style={{marginRight: 4}} />
+              <Text style={tabStyles.indicatorValue}>
+                {milestones.filter(m => m.status === 'completed').length}/{milestones.length}
+              </Text>
+            </View>
+            <Text style={tabStyles.indicatorLabel}>Milestones Done</Text>
+          </View>
+        </View>
+      </View>
+
+      {/* Task Overview Component - Moved above Milestones */}
+      <TaskOverview taskMetrics={taskMetrics} />
+
+      {/* Milestones List Section - Now Collapsible */}
+      <View style={tabStyles.section}>
+        <TouchableOpacity 
+          style={tabStyles.sectionHeader}
+          onPress={() => setMilestonesCollapsed(!milestonesCollapsed)}
+        >
+          <Text style={[tabStyles.sectionTitle, {fontSize: 18, marginBottom: 0}]}>Milestones</Text>
+          
+          <View style={{flexDirection: 'row', alignItems: 'center'}}>
             {/* Create Milestone Button */}
             <TouchableOpacity
               style={tabStyles.addButtonContainer}
@@ -1046,59 +1221,57 @@ const ProjectStatusTab = () => {
                 <Text style={tabStyles.addButtonText}>Create Milestone</Text>
               </View>
             </TouchableOpacity>
-          </View>
-        </View>
-
-        {/* Milestone loading/list/empty state */}
-        {loadingMilestones ? (
-          <ActivityIndicator size="large" color="#0073ea" style={tabStyles.loadingIndicator} />
-        ) : milestones.length > 0 ? (
-          <>
-            {/* Render Combined Timeline Component */}
-            <MilestoneTimeline
-              projectDateRange={projectDateRange}
-              milestones={milestones}
-              isProjectCompleted={isProjectCompleted()}
-              onEditTimeline={() => {
-                 if (projectDateRange) {
-                   setStartDate(parseISO(projectDateRange.start_date));
-                   setEndDate(parseISO(projectDateRange.end_date));
-                 }
-                 setIsTimelineSetupModalVisible(true);
-              }}
-              projectDates={calculateProjectDates()} // Pass calculated dates
-              scheduleStatus={calculateScheduleStatus()} // Pass schedule status
-              getSortedMilestones={getSortedMilestones} // Pass utility function
-            />
-            {/* Render Milestone List Component */}
-            <View style={tabStyles.timelineContainer}>
-              <Text style={tabStyles.timelineTitle}>Milestones</Text>
-              <MilestoneList
-                milestones={milestones}
-                selectedMilestone={selectedMilestone}
-                onUpdateStatus={updateMilestoneStatus}
-                onCompleteMilestone={completeMilestone}
-                onReschedule={handleReschedule}
-                onDelete={handleDelete}
-                getSortedMilestones={getSortedMilestones}
-                formatDateWithTimezone={formatDateWithTimezone}
+            
+            {/* Collapse/Expand Button */}
+            <TouchableOpacity 
+              style={tabStyles.collapseButton}
+              onPress={() => setMilestonesCollapsed(!milestonesCollapsed)}
+            >
+              <Feather 
+                name={milestonesCollapsed ? "chevron-down" : "chevron-up"} 
+                size={20} 
+                color="#6B7280" 
               />
-            </View>
-          </>
-        ) : (
-          <View style={tabStyles.emptyMilestoneContainer}>
-            <Feather name="flag" size={48} color="#E5E7EB" />
-            <Text style={tabStyles.emptySectionText}>No milestones added yet</Text>
-            <Text style={tabStyles.emptySubtext}>Add your first milestone to start tracking project progress</Text>
+            </TouchableOpacity>
           </View>
+        </TouchableOpacity>
+
+        {/* Milestone loading/list/empty state - Only show if not collapsed */}
+        {!milestonesCollapsed && (
+          loadingMilestones ? (
+            <ActivityIndicator size="large" color="#0073ea" style={tabStyles.loadingIndicator} />
+          ) : milestones.length > 0 ? (
+            <>
+              {/* Render Milestone List Component with scrollable container */}
+              <View style={tabStyles.timelineContainer}>
+                <View style={tabStyles.milestoneScrollContainer}>
+                  <ScrollView 
+                    style={tabStyles.milestoneScrollView}
+                    nestedScrollEnabled={true}
+                  >
+                    <MilestoneList
+                      milestones={milestones}
+                      selectedMilestone={selectedMilestone}
+                      onUpdateStatus={updateMilestoneStatus}
+                      onCompleteMilestone={completeMilestone}
+                      onReschedule={handleReschedule}
+                      onDelete={handleDelete}
+                      getSortedMilestones={getSortedMilestones}
+                      formatDateWithTimezone={formatDateWithTimezone}
+                    />
+                  </ScrollView>
+                </View>
+              </View>
+            </>
+          ) : (
+            <View style={tabStyles.emptyMilestoneContainer}>
+              <Feather name="flag" size={48} color="#E5E7EB" />
+              <Text style={tabStyles.emptySectionText}>No milestones added yet</Text>
+              <Text style={tabStyles.emptySubtext}>Add your first milestone to start tracking project progress</Text>
+            </View>
+          )
         )}
       </View>
-
-      {/* Task Overview Component */}
-      <TaskOverview taskMetrics={taskMetrics} />
-
-      {/* Team Activity Component */}
-      <TeamActivity teamMetrics={teamMetrics} />
 
       {/* Modals */}
       <AddEditMilestoneModal

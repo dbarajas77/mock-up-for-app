@@ -227,56 +227,35 @@ const ProjectTeamTab: React.FC<ProjectTeamTabProps> = ({ projectId }) => {
         numColumns={2}
         columnWrapperStyle={styles.columnWrapper}
         renderItem={({ item }) => (
-          <View style={styles.memberCard}>
-            {/* Delete Button */}
-            <TouchableOpacity
-              style={styles.deleteButton}
-              activeOpacity={0.7}
-              onPress={() => {
-                console.log('Delete button pressed for user:', item.id);
-                Alert.alert(
-                  'Remove Member',
-                  `Are you sure you want to remove ${item.name} from the project?`,
-                  [
-                    { text: 'Cancel', style: 'cancel' },
-                    { 
-                      text: 'Remove', 
-                      onPress: () => {
-                        console.log('Removing member with ID:', item.id);
-                        handleRemoveMember(item.id);
-                      }, 
-                      style: 'destructive' 
-                    }
-                  ]
-                );
-              }}
-            >
-              <Feather name="trash-2" size={16} color="#fff" />
-            </TouchableOpacity>
-            
-            {/* Avatar */}
-            <View style={styles.avatarContainer}>
-              {item.avatar ? (
-                <Image source={{ uri: item.avatar }} style={styles.avatar} />
-              ) : (
-                <View style={styles.initialsContainer}>
+          <View style={styles.memberCard} className="card">
+            <View style={styles.cardHeader}>
+              <View style={styles.avatarWrapper}>
+                <View style={styles.avatarContainer}>
                   <Text style={styles.initialsText}>{getInitials(item.name)}</Text>
                 </View>
-              )}
+                <View style={styles.statusIndicator} />
+              </View>
+              
+              <View style={styles.userInfo}>
+                <Text style={styles.memberName}>{item.name || 'Unknown User'}</Text>
+                <Text style={styles.memberRole}>{item.projectRole || 'Member'}</Text>
+              </View>
             </View>
             
-            {/* User Info */}
-            <Text style={styles.memberName} numberOfLines={1}>{item.name || 'Unknown User'}</Text>
-            <Text style={styles.memberRole}>{item.projectRole || 'Member'}</Text>
-            
-            <View style={styles.memberFooter}>
-              <Text style={styles.activeStatus}>
-                {item.lastActive === 'Never' ? 'Active Never' : `Active ${item.lastActive}`}
-              </Text>
-              <TouchableOpacity style={styles.detailsButton}>
-                <Text style={styles.detailsText}>Details</Text>
-                <Feather name="chevron-right" size={16} color={theme.colors.primary.main} />
-              </TouchableOpacity>
+            <View style={styles.cardContent}>
+              <View style={styles.contactSection}>
+                <Text style={styles.contactLabel}>Contact:</Text>
+                <Text style={styles.contactValue}>{item.email || 'No email available'}</Text>
+              </View>
+              
+              <View style={styles.memberFooter}>
+                <Text style={styles.activeStatus}>
+                  Active {item.lastActive || 'Never'}
+                </Text>
+                <TouchableOpacity style={styles.detailsButton}>
+                  <Text style={styles.detailsText}>Details →</Text>
+                </TouchableOpacity>
+              </View>
             </View>
           </View>
         )}
@@ -295,26 +274,26 @@ const ProjectTeamTab: React.FC<ProjectTeamTabProps> = ({ projectId }) => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    padding: 16,
-    backgroundColor: '#fff',
+    padding: 25,
+    backgroundColor: '#F9FAFB', // Light grey background
   },
   header: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 16,
+    marginBottom: 20,
   },
   title: {
     fontSize: 20,
     fontWeight: 'bold',
-    color: '#333',
+    color: '#001532', // Dark blue
   },
   addButton: {
     flexDirection: 'row',
     alignItems: 'center',
     padding: 8,
     borderRadius: 8,
-    backgroundColor: theme.colors.primary.main,
+    backgroundColor: '#00CC66', // Green
   },
   addButtonText: {
     marginLeft: 8,
@@ -327,63 +306,96 @@ const styles = StyleSheet.create({
   },
   memberCard: {
     width: '48%',
-    backgroundColor: '#fff',
-    borderRadius: 8,
+    borderRadius: 10,
+    overflow: 'hidden',
+    marginBottom: 20,
     borderWidth: 1,
-    borderColor: '#e5e7eb',
-    padding: 16,
-    marginBottom: 16,
-    position: 'relative',
+    borderColor: '#E5E7EB', // Light gray border to match the header separator
+    shadowColor: '#000',
+    shadowOffset: { width: 8, height: 12 },
+    shadowOpacity: 0.25,
+    shadowRadius: 12,
+    elevation: 12,
+    backgroundColor: '#FFFFFF', // White background for the main card
   },
-  deleteButton: {
-    position: 'absolute',
-    top: 8,
-    right: 8,
-    padding: 5,
-    zIndex: 1,
+  cardHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 16,
+    backgroundColor: '#f8f9fc', // Light blue-gray
+    borderBottomWidth: 1,
+    borderBottomColor: '#E5E7EB',
+  },
+  avatarWrapper: {
+    position: 'relative',
+    marginRight: 12,
   },
   avatarContainer: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
-    marginBottom: 12,
-    overflow: 'hidden',
-  },
-  avatar: {
-    width: '100%',
-    height: '100%',
-  },
-  initialsContainer: {
-    flex: 1,
+    width: 45,
+    height: 45,
+    borderRadius: 22.5,
+    backgroundColor: '#4A5568',
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: theme.colors.primary.main,
+  },
+  statusIndicator: {
+    position: 'absolute',
+    width: 10,
+    height: 10,
+    borderRadius: 5,
+    backgroundColor: '#00CC66',
+    bottom: 0,
+    right: 0,
+    borderWidth: 1,
+    borderColor: 'white',
   },
   initialsText: {
     color: '#fff',
     fontSize: 18,
     fontWeight: 'bold',
   },
+  userInfo: {
+    flex: 1,
+  },
   memberName: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#333',
-    marginBottom: 4,
+    color: '#001532',
+    marginBottom: 2,
   },
   memberRole: {
     fontSize: 14,
-    color: '#666',
-    marginBottom: 8,
+    color: '#6B7280',
+    fontWeight: '500',
+  },
+  cardContent: {
+    padding: 16,
+    backgroundColor: '#FFFFFF',
+  },
+  contactSection: {
+    marginBottom: 12,
+  },
+  contactLabel: {
+    fontSize: 14,
+    color: '#6B7280',
+    marginBottom: 4,
+  },
+  contactValue: {
+    fontSize: 14, 
+    color: '#1f2937',
+    fontWeight: '500',
   },
   memberFooter: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginTop: 'auto',
+    paddingTop: 8,
+    borderTopWidth: 1,
+    borderTopColor: '#F3F4F6',
   },
   activeStatus: {
     fontSize: 12,
-    color: '#999',
+    color: '#6B7280',
   },
   detailsButton: {
     flexDirection: 'row',
@@ -391,8 +403,8 @@ const styles = StyleSheet.create({
   },
   detailsText: {
     fontSize: 12,
-    color: theme.colors.primary.main,
-    marginRight: 4,
+    color: '#00CC66',
+    fontWeight: '500',
   },
   emptyContainer: {
     flex: 1,
