@@ -1,4 +1,12 @@
 export type RootStackParamList = {
+  Landing: undefined;
+  Features: undefined;
+  Pricing: undefined;
+  Resources: undefined;
+  Support: undefined;
+  Auth: {
+    screen?: 'Login' | 'SignUp';
+  };
   Main: undefined;
   Login: undefined;
   Register: undefined;

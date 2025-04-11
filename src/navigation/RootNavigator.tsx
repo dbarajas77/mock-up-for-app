@@ -7,9 +7,11 @@ import { CurrentProjectProvider } from '../contexts/CurrentProjectContext';
 // Import screens
 import AuthScreen from '../screens/auth/AuthScreen';
 import SidebarNavigator from './SidebarNavigator';
-
-// Import navigators
-import { NavigationContainer } from '@react-navigation/native';
+import LandingScreen from '../screens/public/LandingScreen';
+import FeaturesScreen from '../screens/public/FeaturesScreen';
+import PricingScreen from '../screens/public/PricingScreen';
+import ResourcesScreen from '../screens/public/ResourcesScreen';
+import SupportScreen from '../screens/public/SupportScreen';
 
 // Photo screens
 import UploadPhotoScreen from '../screens/UploadPhotoScreen';
@@ -28,11 +30,8 @@ const RootNavigator = () => {
     console.log('RootNavigator: Auth state updated:', { session, loading });
   }, [session, loading, isInitialized]);
 
-  console.log('RootNavigator: Rendering with auth state:', { session, loading });
-
   // Show loading screen only during initial load
   if (loading && !isInitialized) {
-    console.log('RootNavigator: Showing loading screen');
     return (
       <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: '#fff' }}>
         <ActivityIndicator size="large" color="#001532" />
@@ -44,20 +43,23 @@ const RootNavigator = () => {
   return (
     <CurrentProjectProvider>
       <Stack.Navigator
+        initialRouteName="Landing"
         screenOptions={{
           headerShown: false
         }}
       >
-        {!session ? (
-          <Stack.Screen 
-            name="Auth" 
-            component={AuthScreen}
-            listeners={{
-              focus: () => console.log('Auth screen focused'),
-              blur: () => console.log('Auth screen blurred')
-            }}
-          />
-        ) : (
+        {/* Public Routes - Always accessible */}
+        <Stack.Screen name="Landing" component={LandingScreen} />
+        <Stack.Screen name="Features" component={FeaturesScreen} />
+        <Stack.Screen name="Pricing" component={PricingScreen} />
+        <Stack.Screen name="Resources" component={ResourcesScreen} />
+        <Stack.Screen name="Support" component={SupportScreen} />
+        
+        {/* Auth Screen */}
+        <Stack.Screen name="Auth" component={AuthScreen} />
+        
+        {/* Protected Routes - Only accessible when logged in */}
+        {session && (
           <>
             <Stack.Screen 
               name="Main" 
