@@ -13,21 +13,29 @@
 
 ## Hero Section
 - **Objective:** Immediately capture attention, convey the core value proposition, and drive the primary action
+- **Implementation:**
+  - **Background:** Clean gradient from white to light mint (#f8fffc)
+  - **Logo Placement:** SiteSnap logo (green camera icon with "SiteSnap" text) positioned at the top center or left aligned with the headline
+  - **Logo Size:** 180px width for desktop, 140px for mobile devices
+  - **Tagline Display:** "Project Documentation Made Simple" directly below the logo in medium-weight gray (#5a5a5a)
+
 - **Headline:**
-  - **Task:** "SiteSnap: Streamline Your Project Reporting & Documentation Effortlessly"
+  - **Text:** "SiteSnap: Streamline Your Project Reporting & Documentation Effortlessly"
+  - **Styling:** Bold, 48px on desktop, 32px on mobile, dark (#222) with green (#00c080) accent for "SiteSnap"
   - **Animation:** Text splitting animation with words/characters fading/sliding in sequentially, using ease-out-expo
+
 - **Sub-headline:**
-  - **Task:** "SiteSnap is a comprehensive platform for managing projects, tracking tasks, generating reports, and organizing documents - designed for construction teams, field service operators, and inspection agencies"
-  - **Animation:** Fade in after headline animation completes
-- **Visual:**
-  - **Task:** High-quality product screenshot montage/UI showcase
-  - **Animation:** Subtle parallax effect on scroll, scale/fade-in on load
-- **Call-to-Action (CTA):**
-  - **Task:** "Start Free Trial" button
-  - **Animation:** Subtle hover effect with background transition
-- **Scroll Animation:**
-  - **Task:** Implement viewport detection for animation triggers
-  - **Task:** Make headline sticky during initial scroll
+  - **Text:** "The comprehensive platform for managing projects, tracking tasks, generating reports, and organizing documents - designed for construction teams, field service operators, and inspection agencies"
+  - **Styling:** Light weight (300), 20px, dark gray (#444)
+  
+- **Primary CTA:**
+  - **Button:** "Start Free Trial" - Green background (#00c080), white text, subtle hover effect
+  - **Secondary CTA:** "Watch Demo" - Text link with small play icon, positioned next to primary CTA
+  
+- **Hero Visual:**
+  - **Main Image:** Dashboard mockup showing project gallery with photo documentation
+  - **Device Frame:** Displayed on a tablet/phone combination to emphasize mobile functionality
+  - **Animation:** Subtle floating animation for the devices with screenshots transitioning to show different features
 
 ## Problem/Solution Section
 - **Objective:** Resonate with visitor's challenges and position app as solution
