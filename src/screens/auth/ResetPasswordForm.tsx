@@ -74,7 +74,7 @@ const ResetPasswordForm = ({ onBackToLogin }: ResetPasswordFormProps) => {
         style={[AuthStyles.button, { backgroundColor: '#f3f4f6', marginTop: 15 }]}
         onPress={onBackToLogin}
       >
-        <Text style={[AuthStyles.buttonText, { color: '#001532' }]}>Back to Login</Text>
+        <Text style={[AuthStyles.buttonText, { color: '#00BA88' }]}>Back to Login</Text>
       </TouchableOpacity>
     </View>
   );

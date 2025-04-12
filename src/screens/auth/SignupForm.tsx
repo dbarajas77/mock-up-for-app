@@ -1,14 +1,17 @@
 import React, { useState } from 'react';
-import { View, Text, TextInput, TouchableOpacity, ActivityIndicator } from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, ActivityIndicator, Alert } from 'react-native';
+import { MaterialIcons } from '@expo/vector-icons';
 import { supabase } from '../../lib/supabase';
 import AuthStyles from './AuthStyles';
 import { useProfile } from '../../hooks/useProfile';
+import { useNavigation } from '@react-navigation/native';
 
 interface SignupFormProps {
   onLoginPress: () => void;
 }
 
 const SignupForm = ({ onLoginPress }: SignupFormProps) => {
+  const navigation = useNavigation();
   const [email, setEmail] = useState('');
   const [fullName, setFullName] = useState('');
   const [password, setPassword] = useState('');
@@ -16,6 +19,8 @@ const SignupForm = ({ onLoginPress }: SignupFormProps) => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const { createProfile } = useProfile();
 
   const handleSignup = async () => {
@@ -76,29 +81,69 @@ const SignupForm = ({ onLoginPress }: SignupFormProps) => {
         const profile = await createProfile(authData.user);
         console.log('Profile created successfully:', profile);
         
-        setSuccess('Account created successfully! You can now log in.');
-        
-        // Optional: Automatically redirect to login
-        setTimeout(() => {
-          onLoginPress();
-        }, 2000);
+        setSuccess('Account created successfully!');
+
+        // Try to log in automatically
+        if (authData.session) {
+          console.log('User already has active session, navigating to main screen...');
+          // @ts-ignore - We're ignoring type checking for navigation
+          navigation.navigate('Main');
+        } else {
+          // Log in user automatically
+          console.log('Attempting auto-login after signup...');
+          const { data: loginData, error: loginError } = await supabase.auth.signInWithPassword({
+            email,
+            password
+          });
+
+          if (loginError) {
+            console.error('Auto-login failed:', loginError);
+            Alert.alert(
+              'Account Created',
+              'Your account was created successfully, but automatic login failed. Please log in manually.',
+              [{ text: 'OK', onPress: onLoginPress }]
+            );
+          } else if (loginData.session) {
+            console.log('Auto-login successful, navigating to main screen...');
+            // @ts-ignore - We're ignoring type checking for navigation
+            navigation.navigate('Main');
+          } else {
+            // Just go to login screen
+            Alert.alert(
+              'Account Created',
+              'Your account was created successfully! Please log in.',
+              [{ text: 'OK', onPress: onLoginPress }]
+            );
+          }
+        }
       } catch (profileError: any) {
         console.error('Profile creation error:', profileError);
         
-        // If the profile creation fails, we should still let the user know their account was created
-        setError(`Account created but profile setup failed: ${profileError.message || 'Unknown error'}. Please try logging in.`);
-        
-        // Optional: Automatically redirect to login
-        setTimeout(() => {
-          onLoginPress();
-        }, 3000);
+        Alert.alert(
+          'Account Created',
+          'Your account was created, but we encountered an issue setting up your profile. Please try logging in.',
+          [{ text: 'OK', onPress: onLoginPress }]
+        );
       }
     } catch (error: any) {
       console.error('Unexpected signup error:', error);
       setError(error.message || 'An unexpected error occurred');
+      Alert.alert(
+        'Signup Failed',
+        error.message || 'An unexpected error occurred',
+        [{ text: 'OK' }]
+      );
     } finally {
       setLoading(false);
     }
+  };
+
+  const togglePasswordVisibility = () => {
+    setShowPassword(!showPassword);
+  };
+
+  const toggleConfirmPasswordVisibility = () => {
+    setShowConfirmPassword(!showConfirmPassword);
   };
 
   return (
@@ -129,26 +174,52 @@ const SignupForm = ({ onLoginPress }: SignupFormProps) => {
 
       <View style={AuthStyles.inputContainer}>
         <Text style={AuthStyles.inputLabel}>Password</Text>
-        <TextInput
-          style={AuthStyles.input}
-          placeholder="Enter your password"
-          value={password}
-          onChangeText={setPassword}
-          secureTextEntry
-          testID="password-input"
-        />
+        <View style={AuthStyles.passwordContainer}>
+          <TextInput
+            style={AuthStyles.passwordInput}
+            placeholder="Enter your password"
+            value={password}
+            onChangeText={setPassword}
+            secureTextEntry={!showPassword}
+            testID="password-input"
+          />
+          <TouchableOpacity
+            style={AuthStyles.passwordVisibilityToggle}
+            onPress={togglePasswordVisibility}
+            testID="toggle-password-visibility"
+          >
+            <MaterialIcons
+              name={showPassword ? 'visibility' : 'visibility-off'}
+              size={24}
+              color="#9ca3af"
+            />
+          </TouchableOpacity>
+        </View>
       </View>
 
       <View style={AuthStyles.inputContainer}>
         <Text style={AuthStyles.inputLabel}>Confirm Password</Text>
-        <TextInput
-          style={AuthStyles.input}
-          placeholder="Confirm your password"
-          value={confirmPassword}
-          onChangeText={setConfirmPassword}
-          secureTextEntry
-          testID="confirm-password-input"
-        />
+        <View style={AuthStyles.passwordContainer}>
+          <TextInput
+            style={AuthStyles.passwordInput}
+            placeholder="Confirm your password"
+            value={confirmPassword}
+            onChangeText={setConfirmPassword}
+            secureTextEntry={!showConfirmPassword}
+            testID="confirm-password-input"
+          />
+          <TouchableOpacity
+            style={AuthStyles.passwordVisibilityToggle}
+            onPress={toggleConfirmPasswordVisibility}
+            testID="toggle-confirm-password-visibility"
+          >
+            <MaterialIcons
+              name={showConfirmPassword ? 'visibility' : 'visibility-off'}
+              size={24}
+              color="#9ca3af"
+            />
+          </TouchableOpacity>
+        </View>
       </View>
 
       {error && <Text style={AuthStyles.errorText}>{error}</Text>}

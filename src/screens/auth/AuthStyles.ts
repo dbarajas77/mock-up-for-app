@@ -23,7 +23,7 @@ const AuthStyles = StyleSheet.create({
     fontSize: 28,
     fontWeight: 'bold',
     textAlign: 'center',
-    color: '#001532', // Navy primary color
+    color: '#00BA88', // Changed from #001532 to match the green theme
     marginBottom: 10,
   },
   subheaderText: {
@@ -45,14 +45,14 @@ const AuthStyles = StyleSheet.create({
   },
   activeTab: {
     borderBottomWidth: 2,
-    borderBottomColor: '#001532', // Navy primary color
+    borderBottomColor: '#00BA88', // Changed from #001532 to match the green theme
   },
   tabText: {
     fontSize: 16,
     color: '#9ca3af', // Gray dark color
   },
   activeTabText: {
-    color: '#001532', // Navy primary color
+    color: '#00BA88', // Changed from #001532 to match the green theme
     fontWeight: 'bold',
   },
   formContent: {
@@ -75,9 +75,31 @@ const AuthStyles = StyleSheet.create({
     fontSize: 16,
     backgroundColor: '#f9fafb',
   },
+  passwordContainer: {
+    position: 'relative',
+    flexDirection: 'row',
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: '#e5e7eb',
+    borderRadius: 5,
+    backgroundColor: '#f9fafb',
+  },
+  passwordInput: {
+    flex: 1,
+    height: 50,
+    paddingHorizontal: 15,
+    fontSize: 16,
+    backgroundColor: 'transparent', // Make background transparent since parent has bg color
+    borderWidth: 0, // Remove border since parent has border
+  },
+  passwordVisibilityToggle: {
+    padding: 10,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
   button: {
     height: 50,
-    backgroundColor: '#001532', // Navy primary color
+    backgroundColor: '#00BA88', // Changed from #001532 to match the green theme
     borderRadius: 5,
     justifyContent: 'center',
     alignItems: 'center',
@@ -97,7 +119,7 @@ const AuthStyles = StyleSheet.create({
     marginBottom: 20,
   },
   forgotPasswordText: {
-    color: '#001532', // Navy primary color
+    color: '#00BA88', // Changed from #001532 to match the green theme
     fontSize: 14,
   },
   errorText: {
@@ -115,7 +137,7 @@ const AuthStyles = StyleSheet.create({
     padding: 10,
   },
   switchAuthText: {
-    color: '#001532',
+    color: '#00BA88', // Changed from #001532 to match the green theme
     fontSize: 14,
     textAlign: 'center',
   },

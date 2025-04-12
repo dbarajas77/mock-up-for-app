@@ -1,0 +1,21 @@
+<svg width="352" height="170" viewBox="0 0 352 170" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <!-- Logo Container -->
+  <g>
+    <!-- Camera Icon -->
+    <rect x="40" y="40" width="80" height="80" rx="15" fill="#00BA88"/>
+    <rect x="50" y="50" width="60" height="60" rx="30" stroke="white" stroke-width="8"/>
+    <circle cx="80" cy="80" r="12" fill="white"/>
+    
+    <!-- Text -->
+    <g>
+      <!-- SiteSnap -->
+      <path d="M140 65H190V75H150V85H185V95H150V105H190V115H140V65Z" fill="#1C2540"/>
+      <path d="M200 65H210V115H200V65Z" fill="#1C2540"/>
+      <path d="M220 65H240C250 65 255 70 255 80C255 90 250 95 240 95H230V115H220V65ZM240 85C245 85 245 80 245 75C245 70 245 75 240 75H230V85H240Z" fill="#1C2540"/>
+      <path d="M265 65H315V75H275V85H310V95H275V105H315V115H265V65Z" fill="#00BA88"/>
+    </g>
+  </g>
+  
+  <!-- Tagline Text -->
+  <text x="140" y="135" font-family="Arial" font-size="12" fill="#6B7280">Project Documentation Made Simple</text>
+</svg> 

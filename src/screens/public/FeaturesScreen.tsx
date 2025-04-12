@@ -3,286 +3,379 @@ import {
   View, 
   Text, 
   StyleSheet, 
-  TouchableOpacity, 
   ScrollView, 
   Image,
   Platform,
   useWindowDimensions,
-  FlatList
+  TouchableOpacity
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../../navigation/types';
-import { LinearGradient } from 'expo-linear-gradient';
-import { MaterialIcons, FontAwesome5 } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import Animated, {
-  useAnimatedStyle,
-  useSharedValue,
-  withSpring,
-  withTiming,
-  interpolate,
-  Extrapolate,
-  useAnimatedScrollHandler,
-} from 'react-native-reanimated';
+import { MaterialIcons, FontAwesome5 } from '@expo/vector-icons';
+import Header from '../../components/LandingPage/Header';
+import Footer from '../../components/LandingPage/Footer';
+import FinalCTASection from '../../components/LandingPage/FinalCTASection';
 
+// Constants for styling
 const COLORS = {
-  primary: '#10B981',
+  primary: '#00BA88',
   primaryDark: '#059669',
   textDark: '#111827',
   textLight: '#6B7280',
+  textGray: '#333333',
   white: '#FFFFFF',
   background: '#F9FAFB',
+  backgroundAlt: '#FFFFFF',
+  tagBackground: '#E6F7F2',
 };
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
 
-const AnimatedScrollView = Animated.createAnimatedComponent(ScrollView);
+// Category Tag component
+const CategoryTag = ({ text }) => (
+  <View style={styles.categoryTag}>
+    <Text style={styles.categoryTagText}>{text}</Text>
+  </View>
+);
 
-// Feature Category Component
-const FeatureCategory = ({ title, description, features, icon }) => {
-  const scale = useSharedValue(1);
-
-  const animatedStyle = useAnimatedStyle(() => {
-    return {
-      transform: [{ scale: scale.value }],
-    };
-  });
-
-  const onPressIn = () => {
-    scale.value = withSpring(0.98);
-  };
-
-  const onPressOut = () => {
-    scale.value = withSpring(1);
-  };
+// Feature section component with image and content side by side (or stacked on mobile)
+const FeatureSection = (props) => {
+  const { 
+    categoryTitle, 
+    title, 
+    description,
+    bullets, 
+    image, 
+    imageOnRight = true,
+    backgroundColor = COLORS.backgroundAlt,
+    componentPath
+  } = props;
+  
+  const { width } = useWindowDimensions();
+  const isDesktop = width >= 768;
 
   return (
-    <Animated.View style={[styles.featureCategory, animatedStyle]}>
-      <FontAwesome5 name={icon} size={32} color={COLORS.primary} />
-      <Text style={styles.categoryTitle}>{title}</Text>
-      <Text style={styles.categoryDescription}>{description}</Text>
-      <View style={styles.featuresList}>
-        {features.map((feature, index) => (
-          <View key={index} style={styles.featureItem}>
-            <MaterialIcons name="check-circle" size={20} color={COLORS.primary} />
-            <Text style={styles.featureText}>{feature}</Text>
+    <View style={[styles.featureSection, { backgroundColor }]}>
+      <View style={styles.featureSectionInner}>
+        {/* For desktop layout */}
+        {isDesktop ? (
+          <View style={imageOnRight ? styles.rowLayout : styles.rowReverseLayout}>
+            <View style={styles.featureContent}>
+              {categoryTitle && (
+                <Text style={styles.featureCategoryTitle}>{categoryTitle}</Text>
+              )}
+              <Text style={styles.featureTitle}>{title}</Text>
+              {description && (
+                <Text style={styles.featureDescription}>{description}</Text>
+              )}
+              <View style={styles.featureBullets}>
+                {bullets.map((bullet, index) => (
+                  <View key={index} style={styles.bulletItem}>
+                    <MaterialIcons name="check-circle" size={20} color={COLORS.primary} style={styles.bulletIcon} />
+                    <Text style={styles.bulletText}>{bullet}</Text>
+                  </View>
+                ))}
+              </View>
+              {componentPath && (
+                <Text style={styles.componentPath}>{componentPath}</Text>
+              )}
+            </View>
+            <View style={styles.featureImageContainerDesktop}>
+              <Image 
+                source={image} 
+                style={styles.featureImage} 
+                resizeMode="contain"
+              />
+            </View>
           </View>
-        ))}
+        ) : (
+          // For mobile layout
+          <View>
+            <View style={styles.featureImageContainer}>
+              <Image 
+                source={image} 
+                style={styles.featureImage} 
+                resizeMode="contain"
+              />
+            </View>
+            <View style={styles.featureContent}>
+              {categoryTitle && (
+                <Text style={styles.featureCategoryTitle}>{categoryTitle}</Text>
+              )}
+              <Text style={styles.featureTitle}>{title}</Text>
+              {description && (
+                <Text style={styles.featureDescription}>{description}</Text>
+              )}
+              <View style={styles.featureBullets}>
+                {bullets.map((bullet, index) => (
+                  <View key={index} style={styles.bulletItem}>
+                    <MaterialIcons name="check-circle" size={20} color={COLORS.primary} style={styles.bulletIcon} />
+                    <Text style={styles.bulletText}>{bullet}</Text>
+                  </View>
+                ))}
+              </View>
+              {componentPath && (
+                <Text style={styles.componentPath}>{componentPath}</Text>
+              )}
+            </View>
+          </View>
+        )}
       </View>
-    </Animated.View>
+    </View>
+  );
+};
+
+// Feature category header with category tag
+const FeatureCategoryHeader = ({ title, tagText, description }) => (
+  <View style={styles.categoryHeader}>
+    <CategoryTag text={tagText} />
+    <Text style={styles.categoryHeaderTitle}>{title}</Text>
+    <Text style={styles.categoryHeaderDescription}>{description}</Text>
+  </View>
+);
+
+// Simple integration icon component
+const IntegrationIcon = ({ icon, name }) => {
+  return (
+    <View style={styles.integrationIcon}>
+      <FontAwesome5 name={icon} size={64} color={COLORS.primary} />
+      <Text style={styles.integrationName}>{name}</Text>
+    </View>
   );
 };
 
 const FeaturesScreen = () => {
-  const navigation = useNavigation<NavigationProp>();
-  const { width } = useWindowDimensions();
-  const scrollY = useSharedValue(0);
+  const navigation = useNavigation();
   const insets = useSafeAreaInsets();
-
-  const scrollHandler = useAnimatedScrollHandler({
-    onScroll: (event) => {
-      scrollY.value = event.contentOffset.y;
-    },
-  });
-
-  const headerStyle = useAnimatedStyle(() => {
-    return {
-      opacity: interpolate(
-        scrollY.value,
-        [0, 100],
-        [1, 0.9],
-        Extrapolate.CLAMP
-      ),
-      backgroundColor: COLORS.white,
-    };
-  });
-
-  const featureCategories = [
-    {
-      title: 'Project & Task Management',
-      description: 'Comprehensive tools for managing projects and tasks efficiently',
-      icon: 'tasks',
-      features: [
-        'Project status cards with real-time updates',
-        'Task progress tracking with visual indicators',
-        'Advanced date management and scheduling',
-        'Drag-and-drop task organization',
-        'Real-time comments and collaboration'
-      ]
-    },
-    {
-      title: 'Document & Photo Management',
-      description: 'Seamless organization of project documentation and media',
-      icon: 'images',
-      features: [
-        'Multi-platform photo upload support',
-        'Intelligent photo organization',
-        'Document version control',
-        'Advanced search and filtering',
-        'Secure file sharing'
-      ]
-    },
-    {
-      title: 'Reporting & Analytics',
-      description: 'Generate insights and reports with powerful analytics tools',
-      icon: 'chart-bar',
-      features: [
-        'Custom report templates',
-        'Interactive data visualization',
-        'Export in multiple formats',
-        'Real-time analytics dashboard',
-        'Automated report generation'
-      ]
-    },
-    {
-      title: 'Team Collaboration',
-      description: 'Foster teamwork with integrated collaboration features',
-      icon: 'users',
-      features: [
-        'Role-based access control',
-        'Team organization tools',
-        'Real-time chat system',
-        'Notification management',
-        'File sharing and collaboration'
-      ]
-    }
-  ];
-
-  const integrations = [
-    { name: 'Google Drive', icon: 'google-drive' },
-    { name: 'Dropbox', icon: 'dropbox' },
-    { name: 'Slack', icon: 'slack' },
-    { name: 'Google Calendar', icon: 'calendar' }
-  ];
-
+  // Estimate header height: ~80px + safeArea top inset
+  const headerHeight = 80 + insets.top;
+  
+  // Mock images - use placeholder for now
+  const placeholderImage = require('../../assets/images/dashboard-preview.png');
+  
   return (
     <View style={styles.container}>
-      {/* Header */}
-      <Animated.View style={[styles.header, headerStyle]}>
-        <View style={[styles.headerContent, { paddingTop: insets.top }]}>
-          <TouchableOpacity onPress={() => navigation.navigate('Landing')}>
-            <Text style={styles.logoText}>SiteSnap</Text>
-          </TouchableOpacity>
-          
-          {width > 768 && (
-            <View style={styles.navLinks}>
-              <TouchableOpacity onPress={() => navigation.navigate('Landing')}>
-                <Text style={styles.navLink}>Home</Text>
-              </TouchableOpacity>
-              <TouchableOpacity onPress={() => navigation.navigate('Features')}>
-                <Text style={[styles.navLink, styles.activeNavLink]}>Features</Text>
-              </TouchableOpacity>
-              <TouchableOpacity onPress={() => navigation.navigate('Pricing')}>
-                <Text style={styles.navLink}>Pricing</Text>
-              </TouchableOpacity>
-              <TouchableOpacity onPress={() => navigation.navigate('Resources')}>
-                <Text style={styles.navLink}>Resources</Text>
-              </TouchableOpacity>
-              <TouchableOpacity onPress={() => navigation.navigate('Support')}>
-                <Text style={styles.navLink}>Support</Text>
-              </TouchableOpacity>
-            </View>
-          )}
-
-          <View style={styles.authButtons}>
-            <TouchableOpacity onPress={() => navigation.navigate('Auth', { screen: 'Login' })}>
-              <Text style={styles.loginButton}>Login</Text>
-            </TouchableOpacity>
-            <TouchableOpacity 
-              style={styles.signupButton}
-              onPress={() => navigation.navigate('Auth', { screen: 'SignUp' })}
-            >
-              <Text style={styles.signupButtonText}>Sign Up</Text>
-            </TouchableOpacity>
-          </View>
-        </View>
-      </Animated.View>
-
-      <AnimatedScrollView
+      {/* 1. Header */}
+      <Header />
+      
+      <ScrollView 
         style={styles.scrollView}
-        onScroll={scrollHandler}
-        scrollEventThrottle={16}
+        contentContainerStyle={{ paddingTop: headerHeight }}
       >
-        {/* Introduction Section */}
-        <View style={[styles.introSection, { paddingTop: 100 + insets.top }]}>
-          <Animated.Text style={styles.headline}>
-            Transform Your Project Management{'\n'}
-            with <Text style={{ color: COLORS.primary }}>Powerful Tools</Text>
-          </Animated.Text>
-          <Text style={styles.overview}>
+        {/* 2. Introduction Section */}
+        <View style={styles.introSection}>
+          <Text style={styles.headline}>
+            Transform Your Project Management with Powerful Tools
+          </Text>
+          
+          <Text style={styles.overviewText}>
             Streamline project management, automate reporting, and enhance team collaboration 
-            with our comprehensive suite of tools
+            with our comprehensive suite of tools designed for construction teams, field service operators, and inspection agencies.
           </Text>
-        </View>
 
-        {/* Feature Categories */}
-        <View style={styles.featuresGrid}>
-          {featureCategories.map((category, index) => (
-            <FeatureCategory key={index} {...category} />
-          ))}
-        </View>
-
-        {/* Integration Section */}
-        <View style={styles.integrationSection}>
-          <Text style={styles.sectionTitle}>Seamless Integrations</Text>
-          <Text style={styles.sectionDescription}>
-            Connect with your favorite tools and services
-          </Text>
-          <View style={styles.integrationsGrid}>
-            {integrations.map((integration, index) => (
-              <View key={index} style={styles.integrationItem}>
-                <FontAwesome5 name={integration.icon} size={32} color={COLORS.primary} />
-                <Text style={styles.integrationName}>{integration.name}</Text>
-              </View>
-            ))}
-          </View>
-        </View>
-
-        {/* Call-to-Action Section */}
-        <View style={styles.ctaSection}>
-          <LinearGradient
-            colors={[COLORS.primary, COLORS.primaryDark]}
-            style={styles.ctaGradient}
-          >
-            <Text style={styles.ctaTitle}>Ready to Streamline Your Projects?</Text>
+          <View style={styles.introButtons}>
             <TouchableOpacity 
-              style={styles.ctaButton}
-              onPress={() => navigation.navigate('Auth', { screen: 'SignUp' })}
+              style={styles.primaryButton}
+              onPress={() => navigation.navigate('Features')}
             >
-              <Text style={styles.ctaButtonText}>Start Free Trial</Text>
+              <Text style={styles.primaryButtonText}>Explore Features</Text>
             </TouchableOpacity>
-          </LinearGradient>
-        </View>
-
-        {/* Footer */}
-        <View style={styles.footer}>
-          <View style={styles.footerContent}>
-            <View style={styles.footerSection}>
-              <Text style={styles.footerTitle}>Navigation</Text>
-              <TouchableOpacity onPress={() => navigation.navigate('Landing')}>
-                <Text style={styles.footerLink}>Home</Text>
-              </TouchableOpacity>
-              <TouchableOpacity onPress={() => navigation.navigate('Features')}>
-                <Text style={styles.footerLink}>Features</Text>
-              </TouchableOpacity>
-              <TouchableOpacity onPress={() => navigation.navigate('Pricing')}>
-                <Text style={styles.footerLink}>Pricing</Text>
-              </TouchableOpacity>
-            </View>
-            <View style={styles.footerSection}>
-              <Text style={styles.footerTitle}>Social</Text>
-              <View style={styles.socialLinks}>
-                {['twitter', 'linkedin', 'github'].map((platform, index) => (
-                  <TouchableOpacity key={index} style={styles.socialIcon}>
-                    <FontAwesome5 name={platform} size={24} color={COLORS.primary} />
-                  </TouchableOpacity>
-                ))}
-              </View>
-            </View>
+            <TouchableOpacity 
+              style={styles.secondaryButton}
+              onPress={() => {}}
+            >
+              <Text style={styles.secondaryButtonText}>Book a Demo</Text>
+            </TouchableOpacity>
           </View>
         </View>
-      </AnimatedScrollView>
+        
+        {/* Project & Task Management Category Header */}
+        <FeatureCategoryHeader 
+          tagText="Core Features"
+          title="Project & Task Management"
+          description="Get complete visibility and control over your projects with powerful tools designed for construction and field service teams."
+        />
+        
+        {/* 3.1.1 Dashboard Overview */}
+        <FeatureSection 
+          title="Dashboard Overview"
+          description="Get a comprehensive view of all your projects in one place. Track progress, monitor deadlines, and stay on top of your team's performance with intuitive visualizations."
+          bullets={[
+            "Real-time project status cards",
+            "Visual task progress bars",
+            "Upcoming deadlines and milestones"
+          ]}
+          image={placeholderImage}
+          imageOnRight={true}
+          backgroundColor={COLORS.backgroundAlt}
+          componentPath="src/screens/projects/ProjectDashboard"
+        />
+        
+        {/* 3.1.2 Task Tracking */}
+        <FeatureSection 
+          title="Advanced Task Tracking"
+          description="Our intuitive task management system helps you organize work, assign responsibilities, and track progress effortlessly with drag-and-drop simplicity."
+          bullets={[
+            "Intuitive drag-and-drop interface (Kanban/List)",
+            "Instant status updates and assignments",
+            "Integrated comment system for task discussions"
+          ]}
+          image={placeholderImage}
+          imageOnRight={false}
+          backgroundColor={COLORS.background}
+          componentPath="src/screens/tasks/TaskManager"
+        />
+        
+        {/* Document & Photo Management Category */}
+        <FeatureCategoryHeader 
+          tagText="Media Tools"
+          title="Document & Photo Management"
+          description="Capture, organize, and manage your project documentation with powerful tools designed for field efficiency."
+        />
+        
+        {/* 3.2.1 Photo Upload & Organization */}
+        <FeatureSection 
+          title="Effortless Photo Upload & Organization"
+          description="Capture, upload, and organize site photos with ease. Link images directly to projects and tasks, add annotations, and maintain a comprehensive visual record of your work."
+          bullets={[
+            "Upload photos directly from mobile or web",
+            "Responsive grid view for easy browsing",
+            "Powerful search and filtering options"
+          ]}
+          image={placeholderImage}
+          imageOnRight={true}
+          backgroundColor={COLORS.backgroundAlt}
+          componentPath="src/screens/media/PhotoGrid"
+        />
+        
+        {/* 3.2.2 Document Management */}
+        <FeatureSection 
+          title="Secure Document Management"
+          description="Store, organize, and access all your project documents in one secure location. Fast file browsing and version tracking for quick and reliable document management."
+          bullets={[
+            "Upload various document types (PDF, DOCX, etc.)",
+            "In-app document preview",
+            "Track document versions and history"
+          ]}
+          image={placeholderImage}
+          imageOnRight={false}
+          backgroundColor={COLORS.background}
+          componentPath="src/screens/documents/DocumentList"
+        />
+        
+        {/* Reporting & Analytics Category */}
+        <FeatureCategoryHeader 
+          tagText="Insights"
+          title="Reporting & Analytics"
+          description="Transform your project data into actionable insights with powerful reporting and analysis tools."
+        />
+        
+        {/* 3.3.1 Report Generation */}
+        <FeatureSection 
+          title="Automated Report Generation"
+          description="Transform your project data into professional reports with just a few clicks. Choose from customizable templates or create your own to match your exact requirements."
+          bullets={[
+            "Create professional PDF reports from templates",
+            "Include charts and data visualizations",
+            "Easy export and sharing options"
+          ]}
+          image={placeholderImage}
+          imageOnRight={true}
+          backgroundColor={COLORS.backgroundAlt}
+          componentPath="src/screens/reports/ReportBuilder"
+        />
+        
+        {/* 3.3.2 Data Analysis */}
+        <FeatureSection 
+          title="Insightful Data Analysis"
+          description="Gain valuable insights from your project data with interactive charts and visualizations. Identify trends, track performance metrics, and make informed decisions."
+          bullets={[
+            "Interactive charts for project trends",
+            "Customizable date range and data filters",
+            "Export raw data for further analysis"
+          ]}
+          image={placeholderImage}
+          imageOnRight={false}
+          backgroundColor={COLORS.background}
+          componentPath="src/screens/analytics/AnalyticsDashboard"
+        />
+        
+        {/* Team Collaboration Category */}
+        <FeatureCategoryHeader 
+          tagText="Collaboration"
+          title="Team Collaboration"
+          description="Enhance team coordination and communication with tools designed for seamless collaboration."
+        />
+        
+        {/* 3.4.1 User Management */}
+        <FeatureSection 
+          title="Seamless User Management"
+          description="Manage your team with ease. Assign roles, set permissions, and organize users into project-specific teams to maintain efficient workflows."
+          bullets={[
+            "Assign roles and permissions easily",
+            "Organize users into project teams",
+            "Control access to sensitive project data"
+          ]}
+          image={placeholderImage}
+          imageOnRight={true}
+          backgroundColor={COLORS.backgroundAlt}
+          componentPath="src/screens/team/TeamManagement"
+        />
+        
+        {/* 3.4.2 Communication Tools */}
+        <FeatureSection 
+          title="Integrated Communication Tools"
+          description="Keep your team connected with built-in communication tools. Chat in real-time, receive notifications, and share files directly within the platform."
+          bullets={[
+            "Real-time chat for project discussions",
+            "In-app notification system for updates",
+            "Share files directly within conversations"
+          ]}
+          image={placeholderImage}
+          imageOnRight={false}
+          backgroundColor={COLORS.background}
+          componentPath="src/screens/communication/ChatSystem"
+        />
+        
+        {/* 4. Integration Section */}
+        <View style={styles.integrationSection}>
+          <CategoryTag text="Integrations" />
+          <Text style={styles.integrationTitle}>Connect Your Favorite Tools</Text>
+          <Text style={styles.integrationDescription}>
+            SiteSnap integrates seamlessly with the tools you already use, creating a centralized workflow for your team.
+          </Text>
+          
+          <View style={styles.integrationGrid}>
+            <IntegrationIcon icon="google-drive" name="Google Drive" />
+            <IntegrationIcon icon="dropbox" name="Dropbox" />
+            <IntegrationIcon icon="slack" name="Slack" />
+            <IntegrationIcon icon="calendar" name="Google Calendar" />
+            <IntegrationIcon icon="github" name="GitHub" />
+            <IntegrationIcon icon="trello" name="Trello" />
+          </View>
+        </View>
+        
+        {/* 5. Call-to-Action Section */}
+        <View style={styles.ctaContainer}>
+          <Text style={styles.ctaTitle}>Ready to Streamline Your Projects?</Text>
+          <Text style={styles.ctaDescription}>
+            Join thousands of construction and field service teams who are already saving time and improving project outcomes with SiteSnap.
+          </Text>
+          <View style={styles.ctaButtons}>
+            <TouchableOpacity style={styles.ctaPrimaryButton} onPress={() => navigation.navigate('Auth', { screen: 'SignUp' })}>
+              <Text style={styles.ctaPrimaryButtonText}>Start Free Trial</Text>
+            </TouchableOpacity>
+            <TouchableOpacity style={styles.ctaSecondaryButton} onPress={() => navigation.navigate('Pricing')}>
+              <Text style={styles.ctaSecondaryButtonText}>View Pricing</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+        
+        {/* 6. Footer */}
+        <Footer />
+      </ScrollView>
     </View>
   );
 };
@@ -292,241 +385,285 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: COLORS.white,
   },
-  header: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    zIndex: 1000,
-    backgroundColor: COLORS.white,
-    borderBottomWidth: 1,
-    borderBottomColor: 'rgba(229, 231, 235, 0.5)',
-  },
-  headerContent: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: 20,
-    paddingVertical: 16,
-  },
-  logoText: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    color: COLORS.primary,
-  },
-  navLinks: {
-    flexDirection: 'row',
-    gap: 32,
-  },
-  navLink: {
-    fontSize: 16,
-    color: COLORS.textDark,
-    fontWeight: '500',
-  },
-  activeNavLink: {
-    color: COLORS.primary,
-  },
-  authButtons: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 16,
-  },
-  loginButton: {
-    fontSize: 16,
-    color: COLORS.textDark,
-    fontWeight: '500',
-  },
-  signupButton: {
-    backgroundColor: COLORS.primary,
-    paddingHorizontal: 20,
-    paddingVertical: 12,
-    borderRadius: 8,
-  },
-  signupButtonText: {
-    color: COLORS.white,
-    fontSize: 16,
-    fontWeight: '600',
-  },
   scrollView: {
     flex: 1,
   },
+  // Introduction Section
   introSection: {
+    paddingVertical: 48,
     paddingHorizontal: 20,
     alignItems: 'center',
-    paddingBottom: 60,
+    width: '100%',
   },
   headline: {
-    fontSize: Platform.OS === 'web' ? 48 : 36,
-    fontWeight: '800',
-    color: COLORS.textDark,
-    textAlign: 'center',
-    marginBottom: 24,
-  },
-  overview: {
-    fontSize: 18,
-    color: COLORS.textLight,
-    textAlign: 'center',
-    maxWidth: 600,
-    lineHeight: 28,
-  },
-  featuresGrid: {
-    padding: 20,
-    flexDirection: Platform.OS === 'web' ? 'row' : 'column',
-    flexWrap: 'wrap',
-    gap: 24,
-    justifyContent: 'center',
-  },
-  featureCategory: {
-    backgroundColor: COLORS.white,
-    borderRadius: 12,
-    padding: 24,
-    width: Platform.OS === 'web' ? '45%' : '100%',
-    ...Platform.select({
-      web: {
-        boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)',
-      },
-      default: {
-        elevation: 4,
-      },
-    }),
-  },
-  categoryTitle: {
-    fontSize: 24,
+    fontSize: Platform.OS === 'web' ? 36 : 28,
     fontWeight: '700',
     color: COLORS.textDark,
-    marginTop: 16,
-    marginBottom: 8,
-  },
-  categoryDescription: {
-    fontSize: 16,
-    color: COLORS.textLight,
-    marginBottom: 24,
-  },
-  featuresList: {
-    gap: 12,
-  },
-  featureItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 12,
-  },
-  featureText: {
-    fontSize: 16,
-    color: COLORS.textDark,
-  },
-  integrationSection: {
-    padding: 40,
-    backgroundColor: COLORS.background,
-    alignItems: 'center',
-  },
-  sectionTitle: {
-    fontSize: 32,
-    fontWeight: '700',
-    color: COLORS.textDark,
+    textAlign: 'center',
+    maxWidth: 800,
     marginBottom: 16,
-    textAlign: 'center',
   },
-  sectionDescription: {
-    fontSize: 18,
+  overviewText: {
+    fontSize: Platform.OS === 'web' ? 18 : 16,
     color: COLORS.textLight,
-    marginBottom: 40,
     textAlign: 'center',
-  },
-  integrationsGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    justifyContent: 'center',
-    gap: 24,
-  },
-  integrationItem: {
-    alignItems: 'center',
-    gap: 12,
-    padding: 16,
-    backgroundColor: COLORS.white,
-    borderRadius: 8,
-    width: 120,
-    ...Platform.select({
-      web: {
-        boxShadow: '0 2px 4px -1px rgba(0, 0, 0, 0.1)',
-      },
-      default: {
-        elevation: 2,
-      },
-    }),
-  },
-  integrationName: {
-    fontSize: 14,
-    color: COLORS.textDark,
-    textAlign: 'center',
-  },
-  ctaSection: {
-    padding: 40,
-  },
-  ctaGradient: {
-    padding: 48,
-    borderRadius: 12,
-    alignItems: 'center',
-  },
-  ctaTitle: {
-    fontSize: 32,
-    fontWeight: '700',
-    color: COLORS.white,
+    maxWidth: 800,
+    lineHeight: 26,
     marginBottom: 32,
-    textAlign: 'center',
   },
-  ctaButton: {
-    backgroundColor: COLORS.white,
-    paddingHorizontal: 32,
-    paddingVertical: 16,
-    borderRadius: 8,
-  },
-  ctaButtonText: {
-    fontSize: 18,
-    fontWeight: '600',
-    color: COLORS.primary,
-  },
-  footer: {
-    backgroundColor: COLORS.background,
-    padding: 40,
-  },
-  footerContent: {
-    flexDirection: Platform.OS === 'web' ? 'row' : 'column',
-    justifyContent: 'space-between',
-    gap: 40,
-  },
-  footerSection: {
-    flex: 1,
-  },
-  footerTitle: {
-    fontSize: 18,
-    fontWeight: '700',
-    color: COLORS.textDark,
-    marginBottom: 24,
-  },
-  footerLink: {
-    fontSize: 16,
-    color: COLORS.textLight,
-    marginBottom: 16,
-  },
-  socialLinks: {
+  introButtons: {
     flexDirection: 'row',
     gap: 16,
   },
-  socialIcon: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: COLORS.white,
-    justifyContent: 'center',
+  primaryButton: {
+    backgroundColor: COLORS.primary,
+    paddingVertical: 12,
+    paddingHorizontal: 24,
+    borderRadius: 4,
+  },
+  primaryButtonText: {
+    color: COLORS.white,
+    fontWeight: '600',
+    fontSize: 16,
+  },
+  secondaryButton: {
+    backgroundColor: 'transparent',
+    paddingVertical: 12,
+    paddingHorizontal: 24,
+    borderRadius: 4,
+    borderWidth: 1,
+    borderColor: COLORS.primary,
+  },
+  secondaryButtonText: {
+    color: COLORS.primary,
+    fontWeight: '600',
+    fontSize: 16,
+  },
+  // Category Tag
+  categoryTag: {
+    backgroundColor: COLORS.tagBackground,
+    paddingVertical: 6,
+    paddingHorizontal: 12,
+    borderRadius: 16,
+    alignSelf: 'flex-start',
+    marginBottom: 12,
+  },
+  categoryTagText: {
+    color: COLORS.primary,
+    fontSize: 14,
+    fontWeight: '500',
+  },
+  // Category Header
+  categoryHeader: {
+    paddingHorizontal: 20,
+    paddingTop: 32,
+    paddingBottom: 16,
     alignItems: 'center',
+    maxWidth: 800,
+    marginHorizontal: 'auto',
+    width: '100%',
+  },
+  categoryHeaderTitle: {
+    fontSize: 32,
+    fontWeight: '700',
+    color: COLORS.textDark,
+    textAlign: 'center',
+    marginBottom: 16,
+  },
+  categoryHeaderDescription: {
+    fontSize: 16,
+    color: COLORS.textLight,
+    textAlign: 'center',
+    maxWidth: 700,
+    lineHeight: 24,
+  },
+  // Feature Sections
+  featureSection: {
+    width: '100%',
+    paddingVertical: 64,
+    paddingHorizontal: 20,
+  },
+  featureSectionInner: {
+    maxWidth: 1200,
+    marginHorizontal: 'auto',
+    width: '100%',
+  },
+  rowLayout: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  rowReverseLayout: {
+    flexDirection: 'row-reverse',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  featureContent: {
+    flex: 1,
+    paddingHorizontal: 10,
+    maxWidth: 540,
+  },
+  featureCategoryTitle: {
+    fontSize: 24,
+    fontWeight: '600',
+    color: COLORS.primary,
+    marginBottom: 8,
+  },
+  featureTitle: {
+    fontSize: 28,
+    fontWeight: '700',
+    color: COLORS.textDark,
+    marginBottom: 16,
+  },
+  featureDescription: {
+    fontSize: 16,
+    color: COLORS.textLight,
+    lineHeight: 24,
+    marginBottom: 16,
+  },
+  featureBullets: {
+    marginTop: 16,
+  },
+  bulletItem: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    marginBottom: 8,
+  },
+  bulletIcon: {
+    marginRight: 8,
+    marginTop: 2,
+    color: COLORS.primary,
+  },
+  bulletText: {
+    fontSize: 16,
+    color: COLORS.textGray,
+    flex: 1,
+  },
+  componentPath: {
+    fontSize: 14,
+    color: '#9CA3AF',
+    marginTop: 16,
+    fontFamily: Platform.OS === 'web' ? 'monospace' : 'Courier',
+  },
+  featureImageContainer: {
+    width: '100%',
+    marginBottom: 24,
+  },
+  featureImageContainerDesktop: {
+    width: '45%',
+    marginBottom: 0,
+  },
+  featureImage: {
+    width: '100%',
+    height: 300,
+    borderRadius: 8,
+    backgroundColor: '#E5E7EB', // Light background for placeholder images
+    // Shadow styles
     ...Platform.select({
+      ios: {
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.1,
+        shadowRadius: 4,
+      },
+      android: {
+        elevation: 3,
+      },
       web: {
-        boxShadow: '0 2px 4px -1px rgba(0, 0, 0, 0.1)',
-      },
-      default: {
-        elevation: 2,
-      },
+        boxShadow: '0px 2px 4px rgba(0, 0, 0, 0.1)',
+      }
     }),
+  },
+  // Integration Section
+  integrationSection: {
+    width: '100%',
+    paddingVertical: 64,
+    paddingHorizontal: 20,
+    backgroundColor: COLORS.background,
+    alignItems: 'center',
+  },
+  integrationTitle: {
+    fontSize: 32,
+    fontWeight: '700',
+    color: COLORS.textDark,
+    textAlign: 'center',
+    marginBottom: 16,
+  },
+  integrationDescription: {
+    fontSize: 16,
+    color: COLORS.textLight,
+    textAlign: 'center',
+    maxWidth: 700,
+    marginBottom: 32,
+    lineHeight: 24,
+  },
+  integrationGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    justifyContent: 'center',
+    maxWidth: 1000,
+    width: '100%',
+  },
+  integrationIcon: {
+    alignItems: 'center',
+    margin: 16,
+    opacity: 0.7,
+  },
+  integrationName: {
+    marginTop: 8,
+    fontSize: 14,
+    color: COLORS.textLight,
+  },
+  // CTA Section
+  ctaContainer: {
+    backgroundColor: COLORS.primary,
+    width: '100%',
+    paddingVertical: 80,
+    paddingHorizontal: 20,
+    alignItems: 'center',
+  },
+  ctaTitle: {
+    fontSize: Platform.OS === 'web' ? 36 : 28,
+    fontWeight: '700',
+    color: COLORS.white,
+    textAlign: 'center',
+    marginBottom: 16,
+  },
+  ctaDescription: {
+    fontSize: 16,
+    color: 'rgba(255, 255, 255, 0.9)',
+    maxWidth: 700,
+    textAlign: 'center',
+    marginBottom: 32,
+    lineHeight: 24,
+  },
+  ctaButtons: {
+    flexDirection: 'row',
+    gap: 16,
+  },
+  ctaPrimaryButton: {
+    backgroundColor: COLORS.white,
+    paddingVertical: 12,
+    paddingHorizontal: 24,
+    borderRadius: 4,
+  },
+  ctaPrimaryButtonText: {
+    color: COLORS.primary,
+    fontWeight: '600',
+    fontSize: 16,
+  },
+  ctaSecondaryButton: {
+    backgroundColor: 'transparent',
+    paddingVertical: 12,
+    paddingHorizontal: 24,
+    borderRadius: 4,
+    borderWidth: 1,
+    borderColor: COLORS.white,
+  },
+  ctaSecondaryButtonText: {
+    color: COLORS.white,
+    fontWeight: '600',
+    fontSize: 16,
   },
 });
 

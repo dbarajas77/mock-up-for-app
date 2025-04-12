@@ -1,7 +1,9 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, TextInput, TouchableOpacity, ActivityIndicator } from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, ActivityIndicator, Alert } from 'react-native';
+import { MaterialIcons } from '@expo/vector-icons';
 import { supabase } from '../../lib/supabase';
 import AuthStyles from './AuthStyles';
+import { useNavigation } from '@react-navigation/native';
 
 // Debug logging utility
 const log = {
@@ -16,10 +18,12 @@ interface LoginFormProps {
 }
 
 const LoginForm = ({ onForgotPassword }: LoginFormProps) => {
+  const navigation = useNavigation();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [showPassword, setShowPassword] = useState(false);
 
   useEffect(() => {
     log.info('Login form mounted');
@@ -67,18 +71,39 @@ const LoginForm = ({ onForgotPassword }: LoginFormProps) => {
         throw error;
       }
 
+      if (!data.user || !data.session) {
+        log.error('No user or session returned');
+        throw new Error('Login failed. Please try again.');
+      }
+
       log.success('Login successful', { 
         userId: data.user?.id,
         email: data.user?.email,
         hasSession: !!data.session
       });
+
+      // Navigate to Main which contains the projects screen after successful login
+      // @ts-ignore - We're ignoring type checking for navigation
+      navigation.navigate('Main');
     } catch (error: any) {
       log.error('Error during login:', error);
       setError(error.message || 'An error occurred during login');
+      
+      // Show alert for clearer feedback
+      Alert.alert(
+        'Login Failed',
+        error.message || 'An error occurred during login. Please try again.',
+        [{ text: 'OK', onPress: () => log.info('Alert dismissed') }]
+      );
     } finally {
       setLoading(false);
       log.info('Login attempt completed');
     }
+  };
+
+  const togglePasswordVisibility = () => {
+    setShowPassword(!showPassword);
+    log.info('Password visibility toggled');
   };
 
   return (
@@ -102,18 +127,31 @@ const LoginForm = ({ onForgotPassword }: LoginFormProps) => {
 
       <View style={AuthStyles.inputContainer}>
         <Text style={AuthStyles.inputLabel}>Password</Text>
-        <TextInput
-          style={AuthStyles.input}
-          placeholder="Enter your password"
-          value={password}
-          onChangeText={(text) => {
-            log.info('Password input changed');
-            setPassword(text);
-            setError(null);
-          }}
-          secureTextEntry
-          testID="password-input"
-        />
+        <View style={AuthStyles.passwordContainer}>
+          <TextInput
+            style={AuthStyles.passwordInput}
+            placeholder="Enter your password"
+            value={password}
+            onChangeText={(text) => {
+              log.info('Password input changed');
+              setPassword(text);
+              setError(null);
+            }}
+            secureTextEntry={!showPassword}
+            testID="password-input"
+          />
+          <TouchableOpacity
+            style={AuthStyles.passwordVisibilityToggle}
+            onPress={togglePasswordVisibility}
+            testID="toggle-password-visibility"
+          >
+            <MaterialIcons
+              name={showPassword ? 'visibility' : 'visibility-off'}
+              size={24}
+              color="#9ca3af"
+            />
+          </TouchableOpacity>
+        </View>
       </View>
 
       <TouchableOpacity 
