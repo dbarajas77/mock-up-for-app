@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   View,
   Text,
@@ -21,6 +21,12 @@ import Animated, {
   interpolate,
   Extrapolate,
   useAnimatedScrollHandler,
+  withTiming,
+  withDelay,
+  withSequence,
+  Easing,
+  interpolateColor,
+  runOnJS,
 } from 'react-native-reanimated';
 
 const COLORS = {
@@ -39,6 +45,7 @@ const COLORS = {
 type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
 
 const AnimatedScrollView = Animated.createAnimatedComponent(ScrollView);
+const AnimatedTextInput = Animated.createAnimatedComponent(TextInput);
 
 // ContactForm Component
 const ContactForm = () => {
@@ -48,6 +55,34 @@ const ContactForm = () => {
     subject: '',
     message: '',
   });
+  
+  // Animation values for form fields
+  const scaleAnim = useSharedValue(0.95);
+  const opacityAnim = useSharedValue(0);
+  const pulseAnim = useSharedValue(1);
+  
+  useEffect(() => {
+    // Animate form fields on mount
+    opacityAnim.value = withTiming(1, { duration: 800 });
+    scaleAnim.value = withTiming(1, { duration: 800 });
+    
+    // Pulse effect for submit button
+    setTimeout(() => {
+      pulseAnim.value = withSequence(
+        withTiming(1.1, { duration: 300 }),
+        withTiming(1, { duration: 200 })
+      );
+    }, 1000);
+  }, []);
+  
+  const inputAnimStyle = useAnimatedStyle(() => ({
+    opacity: opacityAnim.value,
+    transform: [{ scale: scaleAnim.value }]
+  }));
+  
+  const buttonAnimStyle = useAnimatedStyle(() => ({
+    transform: [{ scale: pulseAnim.value }]
+  }));
 
   const handleSubmit = () => {
     console.log('Form submitted:', form);
@@ -55,30 +90,30 @@ const ContactForm = () => {
 
   return (
     <View style={styles.formContainer}>
-      <TextInput
-        style={styles.input}
+      <AnimatedTextInput
+        style={[styles.input, inputAnimStyle]}
         placeholder="Your Name"
         value={form.name}
         onChangeText={(text) => setForm({ ...form, name: text })}
         placeholderTextColor={COLORS.textLight}
       />
-      <TextInput
-        style={styles.input}
+      <AnimatedTextInput
+        style={[styles.input, inputAnimStyle]}
         placeholder="Email Address"
         value={form.email}
         onChangeText={(text) => setForm({ ...form, email: text })}
         keyboardType="email-address"
         placeholderTextColor={COLORS.textLight}
       />
-      <TextInput
-        style={styles.input}
+      <AnimatedTextInput
+        style={[styles.input, inputAnimStyle]}
         placeholder="Subject"
         value={form.subject}
         onChangeText={(text) => setForm({ ...form, subject: text })}
         placeholderTextColor={COLORS.textLight}
       />
-      <TextInput
-        style={[styles.input, styles.messageInput]}
+      <AnimatedTextInput
+        style={[styles.input, styles.messageInput, inputAnimStyle]}
         placeholder="Your Message"
         value={form.message}
         onChangeText={(text) => setForm({ ...form, message: text })}
@@ -86,19 +121,43 @@ const ContactForm = () => {
         numberOfLines={4}
         placeholderTextColor={COLORS.textLight}
       />
-      <TouchableOpacity style={styles.submitButton} onPress={handleSubmit}>
-        <Text style={styles.submitButtonText}>Send Message</Text>
-      </TouchableOpacity>
+      <Animated.View style={buttonAnimStyle}>
+        <TouchableOpacity style={styles.submitButton} onPress={handleSubmit}>
+          <Text style={styles.submitButtonText}>Send Message</Text>
+        </TouchableOpacity>
+      </Animated.View>
     </View>
   );
 };
 
 // SupportCard Component
-const SupportCard = ({ icon, title, description, buttonText, onPress }) => {
+const SupportCard = ({ icon, title, description, buttonText, onPress, index }) => {
   const scale = useSharedValue(1);
+  const rotateY = useSharedValue(-10);
+  const opacity = useSharedValue(0);
+  
+  useEffect(() => {
+    // Stagger the card animations
+    const delay = 300 + index * 150;
+    
+    rotateY.value = withDelay(
+      delay,
+      withTiming(0, { duration: 600, easing: Easing.out(Easing.back()) })
+    );
+    
+    opacity.value = withDelay(
+      delay,
+      withTiming(1, { duration: 800 })
+    );
+  }, []);
 
   const cardStyle = useAnimatedStyle(() => ({
-    transform: [{ scale: scale.value }],
+    opacity: opacity.value,
+    transform: [
+      { perspective: 800 },
+      { rotateY: `${rotateY.value}deg` },
+      { scale: scale.value }
+    ],
   }));
 
   const handlePressIn = () => {
@@ -163,11 +222,66 @@ const FAQItem = ({ question, answer }) => {
   );
 };
 
+// AnimatedHeadline Component for color sweep effect
+const AnimatedHeadline = ({ text, style }) => {
+  const animProgress = useSharedValue(0);
+  const textWidth = useSharedValue(0);
+  
+  useEffect(() => {
+    animProgress.value = withTiming(1, { duration: 1500, easing: Easing.inOut(Easing.cubic) });
+  }, []);
+  
+  const sweepStyle = useAnimatedStyle(() => {
+    return {
+      position: 'absolute',
+      left: 0,
+      top: 0,
+      bottom: 0,
+      width: textWidth.value * animProgress.value,
+      backgroundColor: 'transparent',
+    };
+  });
+  
+  const textColorStyle = useAnimatedStyle(() => {
+    // Text color changes from dark to primary color
+    const color = interpolateColor(
+      animProgress.value,
+      [0, 1],
+      [COLORS.textDark, COLORS.primary]
+    );
+    
+    return {
+      color
+    };
+  });
+  
+  const onLayout = (event) => {
+    textWidth.value = event.nativeEvent.layout.width;
+  };
+
+  return (
+    <View style={{ position: 'relative' }} onLayout={onLayout}>
+      <Animated.View style={sweepStyle} />
+      <Animated.Text style={[style, textColorStyle]}>{text}</Animated.Text>
+    </View>
+  );
+};
+
 const SupportScreen = () => {
   const navigation = useNavigation<NavigationProp>();
   const { width } = useWindowDimensions();
   const scrollY = useSharedValue(0);
   const insets = useSafeAreaInsets();
+  const pageOpacity = useSharedValue(0);
+  
+  // Animation values for mounting effect
+  useEffect(() => {
+    pageOpacity.value = withTiming(1, { duration: 600 });
+  }, []);
+  
+  const pageAnimStyle = useAnimatedStyle(() => ({
+    opacity: pageOpacity.value
+  }));
 
   const scrollHandler = useAnimatedScrollHandler({
     onScroll: (event) => {
@@ -228,7 +342,7 @@ const SupportScreen = () => {
   ];
 
   return (
-    <View style={styles.container}>
+    <Animated.View style={[styles.container, pageAnimStyle]}>
       {/* Header */}
       <Animated.View style={[styles.header, headerStyle]}>
         <View style={[styles.headerContent, { paddingTop: insets.top }]}>
@@ -278,7 +392,10 @@ const SupportScreen = () => {
       >
         {/* Hero Section */}
         <View style={[styles.heroSection, { paddingTop: 100 + insets.top }]}>
-          <Text style={styles.headline}>How Can We Help You?</Text>
+          <AnimatedHeadline 
+            text="How Can We Help You?" 
+            style={styles.headline} 
+          />
           <Text style={styles.subheadline}>
             Get the support you need, when you need it
           </Text>
@@ -290,6 +407,7 @@ const SupportScreen = () => {
             {supportOptions.map((option, index) => (
               <SupportCard
                 key={index}
+                index={index}
                 {...option}
                 onPress={() => console.log('Support option:', option.title)}
               />
@@ -344,7 +462,7 @@ const SupportScreen = () => {
           </Text>
         </View>
       </AnimatedScrollView>
-    </View>
+    </Animated.View>
   );
 };
 
