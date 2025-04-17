@@ -1,12 +1,18 @@
-import { StyleSheet } from 'react-native';
+import { StyleSheet, Platform } from 'react-native';
 
 const AuthStyles = StyleSheet.create({
   container: {
+    flexGrow: 1,
+    backgroundColor: '#f5f5f5',
+    minHeight: '100vh',
+  },
+  authWrapper: {
     flex: 1,
+    flexDirection: 'row',
     justifyContent: 'center',
     alignItems: 'center',
     padding: 20,
-    backgroundColor: '#f5f5f5',
+    gap: 40,
   },
   formContainer: {
     width: '100%',
@@ -14,7 +20,25 @@ const AuthStyles = StyleSheet.create({
     backgroundColor: '#ffffff',
     borderRadius: 10,
     padding: 30,
-    boxShadow: '0px 4px 6px rgba(0, 0, 0, 0.1)',
+    ...Platform.select({
+      web: {
+        boxShadow: '0px 4px 6px rgba(0, 0, 0, 0.1)',
+      },
+      default: {
+        elevation: 4,
+      },
+    }),
+  },
+  heroContainer: {
+    flex: 1,
+    maxWidth: 500,
+    justifyContent: 'center',
+    alignItems: 'center',
+    height: '100%',
+  },
+  heroImage: {
+    width: '100%',
+    height: 500,
   },
   header: {
     marginBottom: 30,
@@ -148,6 +172,40 @@ const AuthStyles = StyleSheet.create({
   footerText: {
     color: '#9ca3af', // Gray dark color
     fontSize: 12,
+  },
+  // Back to Home link styles
+  backToHomeButton: {
+    marginTop: 20, // Add some space above the footer
+    marginBottom: 10,
+    alignSelf: 'center', // Center the button
+    paddingVertical: 8,
+  },
+  backToHomeButtonText: {
+    fontSize: 14,
+    color: '#007AFF', // Changed to standard blue
+    textDecorationLine: 'none', // No underline by default
+    ...Platform.select({
+      web: {
+        cursor: 'pointer',
+        ':hover': {
+          textDecorationLine: 'underline', // Underline on hover for web
+          color: '#0056b3', // Darker blue on hover
+        },
+      }
+    })
+  },
+  // Media queries for responsive design
+  '@media (max-width: 768px)': {
+    authWrapper: {
+      flexDirection: 'column',
+      padding: 10,
+    },
+    formContainer: {
+      maxWidth: '100%',
+    },
+    heroContainer: {
+      display: 'none',
+    },
   },
 });
 

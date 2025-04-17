@@ -230,6 +230,19 @@ const HeroSection = () => {
                 <Text style={[styles.secondaryCTAText, isWeb && styles.webSecondaryText]}>See How It Works</Text>
               </TouchableOpacity>
             </Animated.View>
+
+            {/* Demo Button */}
+            <Animated.View entering={FadeInUp.duration(800).delay(1100)}>
+              <TouchableOpacity 
+                style={styles.demoButton}
+                onPress={() => {
+                  console.log('Demo button clicked');
+                  // Add demo logic here
+                }}
+              >
+                <Text style={styles.demoButtonText}>Book a Demo</Text>
+              </TouchableOpacity>
+            </Animated.View>
           </View>
 
           {/* Right Side - Phone Image */}
@@ -237,7 +250,8 @@ const HeroSection = () => {
             entering={FadeIn.duration(800).delay(600)} 
             style={[
               styles.imageContainer, 
-              isDesktop ? { width: '50%' } : { width: '100%', marginTop: 40 }
+              isDesktop ? { width: '50%', marginRight: 225 } : { width: '100%', marginTop: 40 },
+              { zIndex: 1 }
             ]}
           >
             <Image 
@@ -245,6 +259,14 @@ const HeroSection = () => {
               style={styles.phoneImage}
               resizeMode="contain"
             />
+            {/* Hero Guy Image - Positioned absolutely relative to container */}
+            {isDesktop && (
+              <Image
+                source={require('../../assets/images/hero guy.png')} 
+                style={styles.heroGuyImage}
+                resizeMode="contain"
+              />
+            )}
           </Animated.View>
         </View>
         
@@ -399,6 +421,39 @@ const styles = StyleSheet.create({
     right: 0,
     alignItems: 'center',
     justifyContent: 'center',
+  },
+  heroGuyImage: {
+    position: 'absolute',
+    bottom: -105, // Moved up 65px (from -170)
+    right: -170, 
+    width: 420,  
+    height: 560, 
+    zIndex: 2, 
+  },
+  demoButton: {
+    marginTop: 16,
+    paddingVertical: 12,
+    paddingHorizontal: 24,
+    backgroundColor: '#FFFFFF',
+    borderRadius: 8,
+    borderWidth: 2,
+    borderColor: '#00BA88',
+    alignItems: 'center',
+    justifyContent: 'center',
+    ...Platform.select({
+      web: {
+        cursor: 'pointer',
+        transition: 'all 0.2s ease',
+        ':hover': {
+          backgroundColor: '#F0FDF9',
+        },
+      },
+    }),
+  },
+  demoButtonText: {
+    color: '#00BA88',
+    fontWeight: '600',
+    fontSize: 16,
   },
 });
 

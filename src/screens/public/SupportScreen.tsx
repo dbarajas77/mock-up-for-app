@@ -124,7 +124,7 @@ const ShimmerEffect = () => {
     setRaindrops(drops);
     return drops;
   };
-
+  
   useEffect(() => {
     const drops = createRaindrops();
     const animations = [];
@@ -325,13 +325,13 @@ const SupportOption = ({ id, title, description, icon, status, isSelected, onPre
   }
 
   return (
-    <TouchableOpacity
+      <TouchableOpacity
       style={[
         styles.optionButton,
         // Use green selected style or blue inactive style
         isSelected ? styles.optionButtonSelected : styles.optionButtonInactive,
       ]}
-      onPress={onPress}
+        onPress={onPress}
       activeOpacity={0.7}
     >
       <View style={[styles.optionIconCircle, isSelected ? styles.optionIconCircleSelected : styles.optionIconCircleInactive]}>
@@ -348,7 +348,7 @@ const SupportOption = ({ id, title, description, icon, status, isSelected, onPre
           <View style={[styles.optionStatusDot, { backgroundColor: statusDotColor }]} />
         </View>
       )}
-    </TouchableOpacity>
+      </TouchableOpacity>
   );
 };
 
@@ -430,7 +430,7 @@ const LiveChatForm = ({ styles }) => { // Receive styles
 
         <TouchableOpacity style={styles.submitChatButton}>
           <Text style={styles.submitChatButtonText}>Start Chat</Text>
-        </TouchableOpacity>
+      </TouchableOpacity>
       </View>
     </View>
   );
@@ -588,7 +588,7 @@ const RightPanelOverlay = ({ isVisible, onClose, selectedMethod, styles }) => {
             <TouchableOpacity style={styles.overlayCloseButton} onPress={onClose}>
                 <MaterialIcons name="close" size={24} color={COLORS.newTextDark} />
             </TouchableOpacity>
-        </View>
+    </View>
     </Animated.View>
   );
 };
@@ -601,11 +601,11 @@ const SupportScreen = () => {
   const [selectedMethod, setSelectedMethod] = useState('liveChat');
   const [isRightPanelVisible, setIsRightPanelVisible] = useState(false); // Restore state
   const isMobile = width < 768; // Restore mobile check
-
+  
   useEffect(() => {
     pageOpacity.value = withTiming(1, { duration: 600 });
   }, []);
-
+  
   const pageAnimStyle = useAnimatedStyle(() => ({
     opacity: pageOpacity.value
   }));
@@ -645,13 +645,13 @@ const SupportScreen = () => {
           />
           <ShimmerEffect />
           <View style={{ zIndex: 1, alignItems: 'center' }}>
-            <AnimatedHeadline
+          <AnimatedHeadline 
               text="Get in Touch"
-              style={styles.headline}
-            />
-            <Text style={styles.subheadline}>
+            style={styles.headline} 
+          />
+          <Text style={styles.subheadline}>
               We are here to help! Reach out or browse our support options.
-            </Text>
+          </Text>
           </View>
         </View>
 
@@ -694,6 +694,7 @@ const getCombinedStyles = (isMobile) => StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: COLORS.background,
+    alignItems: 'center',
   },
   scrollView: {
     flex: 1,
@@ -730,21 +731,25 @@ const getCombinedStyles = (isMobile) => StyleSheet.create({
   
   // Styles for the new section container
   supportJourneySection: {
-     paddingVertical: Platform.OS === 'web' ? 50 : 30,
-     paddingHorizontal: Platform.OS === 'web' ? 20 : 10,
-     alignItems: 'center',
-     width: '100%',
-     marginBottom: 50,
+    paddingVertical: Platform.OS === 'web' ? 50 : 30,
+    paddingHorizontal: Platform.OS === 'web' ? 20 : 10,
+    alignItems: 'center',
+    justifyContent: 'center',
+    width: '100%',
+    marginBottom: 50,
+    display: 'flex',
   },
 
-  // New Styles for the two-column layout (prefixed to avoid conflicts where possible)
+  // New Styles for the two-column layout
   mainContainer: {
     flexDirection: 'row',
     width: '100%',
-    maxWidth: 800, // Max width based on SVG dimensions
+    maxWidth: 800,
     backgroundColor: 'transparent',
     gap: 20,
     alignItems: 'stretch',
+    justifyContent: 'center',
+    alignSelf: 'center',
   },
   mainContainerMobile: {
     flexDirection: 'column', 
@@ -1019,7 +1024,7 @@ const getCombinedStyles = (isMobile) => StyleSheet.create({
     color: COLORS.newTextDark,
     marginBottom: 20,
     ...Platform.select({
-        web: {
+      web: {
             transition: 'border-color 0.3s ease',
         }
     }),
@@ -1046,7 +1051,7 @@ const getCombinedStyles = (isMobile) => StyleSheet.create({
     fontWeight: 'bold',
   },
   formFieldsScrollView: {
-      flex: 1,
+    flex: 1,
   },
   messageInput: {
     height: 120, 

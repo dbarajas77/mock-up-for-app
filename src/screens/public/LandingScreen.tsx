@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, StyleSheet, ScrollView } from 'react-native';
+import { View, StyleSheet, ScrollView, Text } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import {
@@ -32,6 +32,14 @@ const LandingScreen = () => {
         <ProblemSolutionSection />
         <FeaturesSection />
         <HowItWorksSection />
+
+        {/* New Text Section */}
+        <View style={styles.preTestimonialContainer}>
+          <Text style={styles.preTestimonialText}>
+            With SiteSnap you spend less time on documentation and more time on what matters!
+          </Text>
+        </View>
+
         <TestimonialsSection />
         <PricingSection />
         <FinalCTASection />
@@ -55,6 +63,21 @@ const styles = StyleSheet.create({
     paddingTop: 80, // Adjusted for header
     flexGrow: 1,
     width: '100%',
+  },
+  // Styles for the new text section
+  preTestimonialContainer: {
+    paddingVertical: 40, // Add vertical spacing
+    paddingHorizontal: 20,
+    alignItems: 'center', // Center content
+    backgroundColor: '#F9FAFB', // Optional: Light background to separate sections
+  },
+  preTestimonialText: {
+    fontSize: 24, // Make it bigger
+    fontWeight: '600',
+    color: '#1F2937', // Dark gray text
+    textAlign: 'center',
+    maxWidth: 700, // Limit width for readability
+    lineHeight: 34, // Improve line spacing
   },
 });
 

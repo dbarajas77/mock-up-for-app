@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect, useRef } from 'react';
 import { 
   View, 
   Text, 
@@ -10,7 +10,8 @@ import {
   TouchableOpacity,
   ImageBackground,
   Animated,
-  ImageSourcePropType
+  ImageSourcePropType,
+  Easing
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
@@ -37,7 +38,7 @@ const COLORS = {
   heroBackground: '#F0FDF9',
 };
 
-type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
+type ScreenName = keyof RootStackParamList;
 
 // Category Tag Component with type annotation
 const CategoryTag = ({ text }: { text: string }) => (
@@ -486,22 +487,71 @@ const ShimmerEffect = () => {
 const FeaturesScreen = () => {
   const navigation = useNavigation();
   const insets = useSafeAreaInsets();
-  // Estimate header height: ~80px + safeArea top inset
   const headerHeight = 80 + insets.top;
   
-  // Mock images - use placeholder for now
   const placeholderImage = require('../../assets/images/dashboard-preview.png');
-  // Logo image - use the actual logo
   const logoImage = require('../../assets/images/logo.png');
-  
-  // Handle construction image - use gradient fallback if image is missing
-  // let constructionBgImage;
-  // try {
-  //   constructionBgImage = require('../../assets/images/construction-site.jpg');
-  // } catch (error) {
-  //   console.log('Construction site image not found, using gradient fallback');
-  //   constructionBgImage = null;
-  // }
+
+  // --- Animation values for Hero Section ---
+  const logoAnim = useRef(new Animated.Value(0)).current;
+  const taglineAnim = useRef(new Animated.Value(0)).current;
+  const headlineAnim = useRef(new Animated.Value(0)).current;
+  const subtitleAnim = useRef(new Animated.Value(0)).current;
+  const buttonsAnim = useRef(new Animated.Value(0)).current;
+  // -----------------------------------------
+
+  // --- Effect to trigger Hero animations on mount ---
+  useEffect(() => {
+    Animated.stagger(150, [
+      // Logo animation (fade in + slight scale)
+      Animated.timing(logoAnim, {
+        toValue: 1,
+        duration: 600,
+        easing: Easing.out(Easing.ease),
+        useNativeDriver: true,
+      }),
+      // Tagline animation (fade in + slide up)
+      Animated.timing(taglineAnim, {
+        toValue: 1,
+        duration: 600,
+        easing: Easing.out(Easing.ease),
+        useNativeDriver: true,
+      }),
+      // Headline animation (fade in + slide up)
+      Animated.timing(headlineAnim, {
+        toValue: 1,
+        duration: 700,
+        easing: Easing.out(Easing.ease),
+        useNativeDriver: true,
+      }),
+      // Subtitle animation (fade in + slide up)
+      Animated.timing(subtitleAnim, {
+        toValue: 1,
+        duration: 700,
+        easing: Easing.out(Easing.ease),
+        useNativeDriver: true,
+      }),
+      // Buttons animation (spring in: flip, fade, slide) - Further slowed down
+      Animated.spring(buttonsAnim, {
+        toValue: 1,
+        tension: 15, // Further reduced tension for even slower spring
+        friction: 12, // Adjusted friction for smooth slow damping
+        useNativeDriver: true,
+      }),
+    ]).start();
+  }, []); // Run once on mount
+  // ---------------------------------------------
+
+  const handleStartFreeTrial = () => {
+    console.log('handleStartFreeTrial function called');
+    console.log('Attempting navigation to Auth screen');
+    try {
+      navigation.navigate('Auth' as never);
+      console.log('Navigation command executed');
+    } catch (error) {
+      console.error('Navigation error:', error);
+    }
+  };
 
   return (
     <View style={styles.container}>
@@ -514,48 +564,144 @@ const FeaturesScreen = () => {
       >
         {/* 2. Hero Section with Gradient Background */}
         <View style={styles.heroSection}>
-          {/* Always use the LinearGradient fallback */}
           <LinearGradient
-            colors={[COLORS.primary, COLORS.primaryDark, COLORS.background]} // Use fallback colors
+            colors={[COLORS.primary, COLORS.primaryDark, COLORS.background]}
             start={{ x: 0.5, y: 0 }}
             end={{ x: 0.5, y: 1 }}
-            style={styles.heroBackground} // Use the heroBackground style
+            style={styles.heroBackground}
           >
             <View style={styles.heroContent}>
               <ShimmerEffect />
-              {/* SiteSnap Logo */}
-              <View style={styles.logoContainer}>
+              {/* SiteSnap Logo - Animated */}
+              <Animated.View 
+                style={[
+                  styles.logoContainer,
+                  {
+                    opacity: logoAnim,
+                    transform: [
+                      {
+                        scale: logoAnim.interpolate({
+                          inputRange: [0, 1],
+                          outputRange: [0.8, 1]
+                        })
+                      }
+                    ]
+                  }
+                ]}
+              >
                 <Image 
                   source={logoImage}
                   style={styles.featureLogo}
                   resizeMode="contain"
                 />
-              </View>
+              </Animated.View>
               
-              <Text style={[styles.heroTagline, styles.heroTextColor]}>Everything you need to succeed</Text>
-              <Text style={[styles.heroHeadline, styles.heroTextColor]}>
+              {/* Tagline - Animated */}
+              <Animated.Text 
+                style={[
+                  styles.heroTagline, 
+                  styles.heroTextColor,
+                  {
+                    opacity: taglineAnim,
+                    transform: [
+                      {
+                        translateY: taglineAnim.interpolate({
+                          inputRange: [0, 1],
+                          outputRange: [20, 0] // Slide up from 20px below
+                        })
+                      }
+                    ]
+                  }
+                ]}
+              >
+                Everything you need to succeed
+              </Animated.Text>
+              
+              {/* Headline - Animated */}
+              <Animated.Text 
+                style={[
+                  styles.heroHeadline, 
+                  styles.heroTextColor,
+                  {
+                    opacity: headlineAnim,
+                    transform: [
+                      {
+                        translateY: headlineAnim.interpolate({
+                          inputRange: [0, 1],
+                          outputRange: [30, 0] // Slide up from 30px below
+                        })
+                      }
+                    ]
+                  }
+                ]}
+              >
                 Powerful features to streamline your project workflows
-              </Text>
+              </Animated.Text>
               
-              <Text style={[styles.heroSubtitle, styles.heroTextColor]}>
+              {/* Subtitle - Animated */}
+              <Animated.Text 
+                style={[
+                  styles.heroSubtitle, 
+                  styles.heroTextColor,
+                  {
+                    opacity: subtitleAnim,
+                    transform: [
+                      {
+                        translateY: subtitleAnim.interpolate({
+                          inputRange: [0, 1],
+                          outputRange: [30, 0] // Slide up from 30px below
+                        })
+                      }
+                    ]
+                  }
+                ]}
+              >
                 SiteSnap combines powerful project management tools with intuitive photo 
                 and document handling to keep your team organized and your projects on track.
-              </Text>
+              </Animated.Text>
 
-              <View style={styles.heroButtons}>
+              {/* Buttons - Animated */}
+              <Animated.View 
+                style={[
+                  styles.heroButtons,
+                  {
+                    opacity: buttonsAnim,
+                    transform: [
+                      {
+                        translateY: buttonsAnim.interpolate({
+                          inputRange: [0, 1],
+                          outputRange: [30, 0]
+                        })
+                      },
+                      {
+                        rotateY: buttonsAnim.interpolate({
+                          inputRange: [0, 1],
+                          outputRange: ['-180deg', '0deg']
+                        })
+                      }
+                    ]
+                  }
+                ]}
+              >
                 <TouchableOpacity 
                   style={styles.primaryButton}
-                  onPress={() => navigation.navigate('Auth', { screen: 'SignUp' })}
+                  onPress={() => {
+                    console.log('Start Free Trial button clicked');
+                    handleStartFreeTrial();
+                  }}
                 >
                   <Text style={styles.primaryButtonText}>Start Free Trial</Text>
                 </TouchableOpacity>
                 <TouchableOpacity 
                   style={styles.secondaryButton}
-                  onPress={() => {}}
+                  onPress={() => { 
+                    console.log('Book a Demo button clicked');
+                    /* Add demo booking logic here */ 
+                  }}
                 >
                   <Text style={styles.secondaryButtonText}>Book a Demo</Text>
                 </TouchableOpacity>
-              </View>
+              </Animated.View>
             </View>
           </LinearGradient>
         </View>
@@ -846,6 +992,20 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
     paddingHorizontal: 24,
     borderRadius: 4,
+    ...Platform.select({
+      web: {
+        cursor: 'pointer',
+        transition: 'all 0.2s ease',
+        ':hover': {
+          backgroundColor: '#047857', // More distinct darker green
+          transform: 'translateY(-2px)',
+          boxShadow: '0 5px 15px rgba(0, 0, 0, 0.2)', // Slightly stronger shadow
+        },
+      },
+      default: { 
+        elevation: 2,
+      }
+    }),
   },
   primaryButtonText: {
     color: COLORS.white,
@@ -853,15 +1013,29 @@ const styles = StyleSheet.create({
     fontSize: 16,
   },
   secondaryButton: {
-    backgroundColor: 'transparent',
+    backgroundColor: COLORS.white, 
     paddingVertical: 12,
     paddingHorizontal: 24,
     borderRadius: 4,
-    borderWidth: 1,
-    borderColor: COLORS.primary,
+    borderWidth: 2, 
+    borderColor: COLORS.primary, 
+    ...Platform.select({
+      web: {
+        cursor: 'pointer',
+        transition: 'all 0.2s ease',
+        ':hover': {
+          backgroundColor: '#D1FAE5', // More distinct light green background
+          transform: 'translateY(-2px)',
+          boxShadow: '0 5px 15px rgba(0, 0, 0, 0.15)', // Slightly stronger shadow
+        },
+      },
+      default: { 
+        elevation: 1,
+      }
+    }),
   },
   secondaryButtonText: {
-    color: COLORS.primary,
+    color: COLORS.primary, 
     fontWeight: '600',
     fontSize: 16,
   },

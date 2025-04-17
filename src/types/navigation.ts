@@ -7,7 +7,10 @@ export type PublicStackParamList = {
   Pricing: undefined;
   Resources: undefined;
   Support: undefined;
-  Auth: undefined;
+  Auth: {
+    screen?: 'Login' | 'SignUp' | 'Reset';
+    fromFeatures?: boolean;
+  };
 };
 
 // Protected Routes - Main Tab Navigator

@@ -297,8 +297,7 @@ const TestimonialsSection = () => {
   return (
     <PageWrapper backgroundColor="#F9FAFB">
       <View style={styles.container}>
-        <Text style={styles.sectionTitle}>Loved by teams worldwide</Text>
-        <Text style={styles.sectionSubtitle}>See what our customers have to say about SiteSnap</Text>
+        <Text style={styles.sectionTitle}>With SiteSnap you spend less time on documentation and more time on what matters!</Text>
         
         <Animated.ScrollView
           ref={scrollViewRef}
@@ -370,14 +369,8 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     color: '#111827',
     textAlign: 'center',
-    marginBottom: 16,
-  },
-  sectionSubtitle: {
-    fontSize: 18,
-    color: '#6B7280',
-    textAlign: 'center',
     marginBottom: 48,
-    maxWidth: 600,
+    maxWidth: 900,
   },
   scrollViewContainer: {
     width: '100%',

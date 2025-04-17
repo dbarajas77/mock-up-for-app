@@ -5,7 +5,8 @@ export type RootStackParamList = {
   Resources: undefined;
   Support: undefined;
   Auth: {
-    screen?: 'Login' | 'SignUp';
+    screen?: 'Login' | 'SignUp' | 'Reset';
+    fromFeatures?: boolean;
   };
   Main: undefined;
   Login: undefined;

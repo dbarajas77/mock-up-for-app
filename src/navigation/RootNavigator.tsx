@@ -3,6 +3,7 @@ import { createStackNavigator } from '@react-navigation/stack';
 import { View, ActivityIndicator, Text } from 'react-native';
 import { useAuth } from '../contexts/AuthContext';
 import { CurrentProjectProvider } from '../contexts/CurrentProjectContext';
+import { RootStackParamList } from '../types/navigation';
 
 // Import screens
 import AuthScreen from '../screens/auth/AuthScreen';
@@ -16,7 +17,13 @@ import SupportScreen from '../screens/public/SupportScreen';
 // Photo screens
 import UploadPhotoScreen from '../screens/UploadPhotoScreen';
 
-const Stack = createStackNavigator();
+const Stack = createStackNavigator<RootStackParamList>();
+
+export type RootStackParamList = {
+  Public: NavigatorScreenParams<PublicStackParamList>;
+  Auth: AuthScreenParams;
+  // ... existing code ...
+}
 
 const RootNavigator = () => {
   const { session, loading } = useAuth();

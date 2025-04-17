@@ -1,7 +1,8 @@
-import React, { useEffect, useState, useRef } from 'react';
+import React, { useEffect, useState, useRef, useMemo } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, useWindowDimensions, Platform, Animated, Easing } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { MaterialIcons } from '@expo/vector-icons';
+import Image from 'react-native/Libraries/Image/Image';
 
 // Application guide colors
 const appColors = {
@@ -19,7 +20,8 @@ const appColors = {
     report: '#1E40AF',       // Deep blue
     photo: '#4F46E5',        // Indigo blue
     task: '#2563EB',         // Royal blue
-  }
+  },
+  white: '#FFFFFF',
 };
 
 const featuresData = [
@@ -406,8 +408,8 @@ const AnimatedCheckIcon = ({ animationProgress, color }) => {
           <View style={{ width: 24, height: 2, backgroundColor: 'white' }} />
         </View>
       </Animated.View>
-    </View>
-  );
+  </View>
+);
 };
 
 // Animated feature item component
@@ -584,24 +586,142 @@ const FeaturesSection = () => {
   const { width } = useWindowDimensions();
   const isDesktop = width >= 1024;
   const isTablet = width >= 768 && width < 1024;
-  const isSmallTablet = width >= 576 && width < 768;
-  const isMobile = width < 576;
+  const isSmallTablet = width >= 600 && width < 768;
+  const isMobile = width < 600;
   const isExtraSmallScreen = width < 360;
-  const [isVisible, setIsVisible] = useState(false);
   const sectionRef = useRef(null);
-  
+  const [isVisible, setIsVisible] = useState(true);
+
+  // Animation values
+  const titleAnimation = useRef(new Animated.Value(0)).current;
+  const subtitleAnimation = useRef(new Animated.Value(0)).current;
+  const buttonAnimation = useRef(new Animated.Value(0)).current;
+  const buttonScaleAnimation = useRef(new Animated.Value(1)).current;
+
+  // Memoize the animated style objects to prevent recreation on each render
+  const logoAnimStyle = useMemo(() => ({
+    opacity: titleAnimation,
+    transform: [
+      {
+        scale: titleAnimation.interpolate({
+          inputRange: [0, 1],
+          outputRange: [0.8, 1]
+        })
+      }
+    ]
+  }), [titleAnimation]);
+
+  const taglineAnimStyle = useMemo(() => ({
+    opacity: subtitleAnimation,
+    transform: [
+      {
+        translateY: subtitleAnimation.interpolate({
+          inputRange: [0, 1],
+          outputRange: [20, 0]
+        })
+      }
+    ]
+  }), [subtitleAnimation]);
+
+  const headlineAnimStyle = useMemo(() => ({
+    opacity: titleAnimation,
+    transform: [
+      {
+        translateY: titleAnimation.interpolate({
+          inputRange: [0, 1],
+          outputRange: [30, 0]
+        })
+      }
+    ]
+  }), [titleAnimation]);
+
+  const subtitleAnimStyle = useMemo(() => ({
+    opacity: subtitleAnimation,
+    transform: [
+      {
+        translateY: subtitleAnimation.interpolate({
+          inputRange: [0, 1],
+          outputRange: [30, 0]
+        })
+      }
+    ]
+  }), [subtitleAnimation]);
+
+  const buttonsAnimStyle = useMemo(() => ({
+    opacity: buttonAnimation,
+    transform: [
+      {
+        translateY: buttonAnimation.interpolate({
+          inputRange: [0, 1],
+          outputRange: [30, 0]
+        })
+      },
+      {
+        rotateY: buttonAnimation.interpolate({
+          inputRange: [0, 1],
+          outputRange: ['-180deg', '0deg']
+        })
+      }
+    ]
+  }), [buttonAnimation]);
+
+  // Trigger animations function
+  const startAnimations = () => {
+    // Reset animation values
+    titleAnimation.setValue(0);
+    subtitleAnimation.setValue(0);
+    buttonAnimation.setValue(0);
+
+    // Start the staggered animation sequence
+    Animated.sequence([
+      // Title animation with spring effect
+      Animated.spring(titleAnimation, {
+        toValue: 1,
+        tension: 50,
+        friction: 8,
+        useNativeDriver: true,
+      }),
+      // Subtitle animation
+      Animated.timing(subtitleAnimation, {
+        toValue: 1,
+        duration: 800,
+        delay: 100,
+        easing: Easing.out(Easing.cubic),
+        useNativeDriver: true,
+      }),
+      // Button animation with bounce
+      Animated.spring(buttonAnimation, {
+        toValue: 1,
+        tension: 40,
+        friction: 7,
+        useNativeDriver: true,
+      }),
+    ]).start();
+  };
+
+  // Initial animation on mount
   useEffect(() => {
+    // Start animations immediately on mount
+    startAnimations();
+
+    // Setup Intersection Observer only for web
     if (Platform.OS === 'web') {
-      // Use IntersectionObserver for web
+      let wasIntersecting = false; // Track previous state
+
       const observer = new IntersectionObserver(
         (entries) => {
-          // Update visibility state based on intersection
-          setIsVisible(entries[0].isIntersecting);
-          // Don't disconnect the observer to allow re-animation when scrolling back up
+          const isIntersecting = entries[0].isIntersecting;
+          setIsVisible(isIntersecting); // Still need to update state for FeatureItem
+          
+          // Only restart animations if it becomes visible *after* being hidden
+          if (isIntersecting && !wasIntersecting) {
+            startAnimations();
+          }
+          wasIntersecting = isIntersecting; // Update previous state
         },
         { 
-          threshold: 0.2, // Trigger when 20% of the element is visible
-          rootMargin: '0px 0px -100px 0px' // Slight offset to trigger earlier
+          threshold: 0.2, // Trigger when 20% is visible
+          rootMargin: '0px 0px -100px 0px' // Adjust trigger margin
         }
       );
 
@@ -610,20 +730,38 @@ const FeaturesSection = () => {
         observer.observe(currentRef);
       }
 
+      // Cleanup observer on unmount
       return () => {
         if (currentRef) {
           observer.unobserve(currentRef);
         }
       };
-    } else {
-      // For mobile, we'll use a simpler approach - just trigger once
-      const timer = setTimeout(() => {
-        setIsVisible(true);
-      }, 300);
-      
-      return () => clearTimeout(timer);
     }
-  }, []);
+    // No specific cleanup needed for non-web platforms
+  }, []); // Empty dependency array ensures this runs only once on mount
+
+  // Button hover/press animation
+  const handlePressIn = () => {
+    Animated.spring(buttonScaleAnimation, {
+      toValue: 0.95,
+      tension: 100,
+      friction: 5,
+      useNativeDriver: true,
+    }).start();
+  };
+
+  const handlePressOut = () => {
+    Animated.spring(buttonScaleAnimation, {
+      toValue: 1,
+      tension: 100,
+      friction: 5,
+      useNativeDriver: true,
+    }).start();
+  };
+
+  const handleStartFreeTrial = () => {
+    navigation.navigate('Auth', { screen: 'SignUp' });
+  };
 
   return (
     <View 
@@ -646,20 +784,81 @@ const FeaturesSection = () => {
           isMobile && styles.headerContainerMobile,
           isExtraSmallScreen && styles.headerContainerExtraSmall
         ]}>
-          <Text style={[
-            styles.sectionTitle,
-            (isTablet || isSmallTablet) && styles.sectionTitleTablet,
-            isMobile && styles.sectionTitleMobile,
-            isExtraSmallScreen && styles.sectionTitleExtraSmall
-          ]}>Key Features</Text>
-          <Text style={[
-            styles.sectionSubtitle,
-            (isTablet || isSmallTablet) && styles.sectionSubtitleTablet,
-            isMobile && styles.sectionSubtitleMobile,
-            isExtraSmallScreen && styles.sectionSubtitleExtraSmall
-          ]}>
+          <Animated.Text 
+            style={[
+              styles.sectionTitle,
+              (isTablet || isSmallTablet) && styles.sectionTitleTablet,
+              isMobile && styles.sectionTitleMobile,
+              isExtraSmallScreen && styles.sectionTitleExtraSmall,
+              {
+                opacity: titleAnimation,
+                transform: [
+                  { 
+                    translateY: titleAnimation.interpolate({
+                      inputRange: [0, 1],
+                      outputRange: [50, 0],
+                    })
+                  },
+                  {
+                    scale: titleAnimation.interpolate({
+                      inputRange: [0, 1],
+                      outputRange: [0.9, 1],
+                    })
+                  }
+                ]
+              }
+            ]}
+          >
+            Key Features
+          </Animated.Text>
+          
+          <Animated.Text 
+            style={[
+              styles.sectionSubtitle,
+              (isTablet || isSmallTablet) && styles.sectionSubtitleTablet,
+              isMobile && styles.sectionSubtitleMobile,
+              isExtraSmallScreen && styles.sectionSubtitleExtraSmall,
+              {
+                opacity: subtitleAnimation,
+                transform: [
+                  { 
+                    translateY: subtitleAnimation.interpolate({
+                      inputRange: [0, 1],
+                      outputRange: [30, 0],
+                    })
+                  }
+                ]
+              }
+            ]}
+          >
             Everything you need to manage projects efficiently
-          </Text>
+          </Animated.Text>
+
+          <Animated.View
+            style={[
+              {
+                opacity: buttonAnimation,
+                transform: [
+                  { 
+                    translateY: buttonAnimation.interpolate({
+                      inputRange: [0, 1],
+                      outputRange: [30, 0],
+                    })
+                  },
+                  { scale: buttonScaleAnimation }
+                ]
+              }
+            ]}
+          >
+            <TouchableOpacity 
+              style={styles.bookDemoButton}
+              onPress={handleStartFreeTrial}
+              onPressIn={handlePressIn}
+              onPressOut={handlePressOut}
+            >
+              <Text style={styles.bookDemoButtonText}>Start Free Trial</Text>
+            </TouchableOpacity>
+          </Animated.View>
         </View>
         
         <View style={[
@@ -1022,6 +1221,29 @@ const styles = StyleSheet.create({
   },
   buttonIcon: {
     marginLeft: 4,
+  },
+  bookDemoButton: {
+    backgroundColor: '#FFFFFF',
+    paddingVertical: 12,
+    paddingHorizontal: 24,
+    borderRadius: 8,
+    marginTop: 24,
+    ...Platform.select({
+      web: {
+        cursor: 'pointer',
+        transition: 'all 0.3s ease',
+        boxShadow: '0 2px 8px rgba(0, 0, 0, 0.1)',
+      },
+      default: {
+        elevation: 2,
+      }
+    }),
+  },
+  bookDemoButtonText: {
+    color: appColors.primary,
+    fontSize: 16,
+    fontWeight: '600',
+    textAlign: 'center',
   },
 });
 

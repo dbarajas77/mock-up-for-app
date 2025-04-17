@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   View, 
   Text, 
@@ -46,19 +46,51 @@ type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
 
 const AnimatedScrollView = CoreAnimated.createAnimatedComponent(ScrollView);
 
-// Billing Toggle Component
+// Billing Toggle Component - fix animation issues
 const BillingToggle = ({ isAnnual, setIsAnnual }) => {
-  const toggleAnimation = useSharedValue(isAnnual ? 28 : 0);
+  // Using Animated from react-native (CoreAnimated) for simplicity with absolute positioning
+  const [position] = useState(new CoreAnimated.Value(isAnnual ? 1 : 0));
+  
+  // Update animation whenever isAnnual changes
+  useEffect(() => {
+    CoreAnimated.spring(position, {
+      toValue: isAnnual ? 1 : 0,
+      friction: 6,
+      tension: 20,
+      useNativeDriver: false // Must be false for layout properties
+    }).start();
+  }, [isAnnual, position]);
+  
+  const toggleThumbStyle = {
+    position: 'absolute',
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: COLORS.white,
+    top: 2, // Center vertically (40 - 36)/2
+    left: position.interpolate({
+      inputRange: [0, 1],
+      outputRange: [2, 42] // (80 - 36) - 2 = 42 for right position
+    }),
+    ...Platform.select({
+      web: {
+        boxShadow: '0 2px 4px rgba(0,0,0,0.2)',
+      },
+      default: {
+        elevation: 4,
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.2,
+        shadowRadius: 2,
+      }
+    }),
+  };
 
   const onToggle = () => {
     const newValue = !isAnnual;
-    toggleAnimation.value = withSpring(newValue ? 28 : 0);
     setIsAnnual(newValue);
+    console.log('Toggle billing to:', newValue ? 'Annual' : 'Monthly');
   };
-
-  const toggleStyle = useAnimatedStyle(() => ({
-    transform: [{ translateX: toggleAnimation.value }],
-  }));
 
   return (
     <View style={styles.billingToggleContainer}>
@@ -68,7 +100,7 @@ const BillingToggle = ({ isAnnual, setIsAnnual }) => {
         onPress={onToggle}
         activeOpacity={0.8}
       >
-        <CoreAnimated.View style={[styles.toggleThumb, toggleStyle]} />
+        <CoreAnimated.View style={toggleThumbStyle} />
       </TouchableOpacity>
       <Text style={[styles.billingOption, isAnnual && styles.billingOptionActive]}>
         Annual
@@ -81,7 +113,14 @@ const BillingToggle = ({ isAnnual, setIsAnnual }) => {
 // Pricing Card Component
 const PricingCard = ({ plan, isAnnual, navigation }) => {
   const scale = useSharedValue(1);
+  const [additionalSeats, setAdditionalSeats] = useState(0);
   
+  React.useEffect(() => {
+    if (plan.name === 'Professional') {
+      console.log('Professional plan rendering with additionalSeats:', additionalSeats);
+    }
+  }, [plan.name, additionalSeats]);
+
   const cardStyle = useAnimatedStyle(() => ({
     transform: [{ scale: scale.value }],
   }));
@@ -94,8 +133,24 @@ const PricingCard = ({ plan, isAnnual, navigation }) => {
     scale.value = withSpring(1);
   };
 
-  const price = isAnnual ? plan.price.annual : plan.price.monthly;
+  // Calculate base price from plan
+  const basePrice = isAnnual ? plan.price.annual : plan.price.monthly;
+  // Calculate additional cost (only for Professional plan)
+  const additionalSeatsCost = (plan.name === 'Professional' && additionalSeats > 0) 
+    ? additionalSeats * (isAnnual ? 250 : 25) // $25/month or $250/year per additional seat
+    : 0;
+  // Total price
+  const totalPrice = basePrice + additionalSeatsCost;
+
   const savings = isAnnual && plan.price.monthly ? (plan.price.monthly * 12 - plan.price.annual).toFixed(0) : 0;
+
+  const addSeat = () => {
+    setAdditionalSeats(prev => prev + 1);
+  };
+
+  const removeSeat = () => {
+    setAdditionalSeats(prev => Math.max(0, prev - 1));
+  };
 
   const renderPrice = () => {
     if (plan.name === 'Enterprise') {
@@ -108,11 +163,11 @@ const PricingCard = ({ plan, isAnnual, navigation }) => {
     return (
       <View style={styles.priceContainer}>
         <Text style={styles.currency}>$</Text>
-        <Text style={styles.price}>{price}</Text>
+        <Text style={styles.price}>{totalPrice}</Text>
         <Text style={styles.period}>/{isAnnual ? 'year' : 'month'}</Text>
         {isAnnual && savings > 0 && (
           <View style={styles.savingsBadge}>
-            <Text style={styles.savingsText}>Save ${savings}</Text>
+            <Text style={styles.savingsBadgeText}>Save ${savings}</Text>
           </View>
         )}
       </View>
@@ -137,6 +192,32 @@ const PricingCard = ({ plan, isAnnual, navigation }) => {
       )}
       <Text style={styles.planName}>{plan.name}</Text>
       {renderPrice()}
+
+      {/* Make Add Seat controls more prominent - only show for Professional plan */}
+      {plan.name === 'Professional' && (
+        <View style={styles.seatControlContainer}>
+          <Text style={styles.seatControlTitle}>Add More Seats</Text>
+          <Text style={styles.seatLabel}>Number of additional seats: {additionalSeats}</Text>
+          <View style={styles.seatButtonsRow}>
+            <TouchableOpacity 
+              style={[styles.seatButton, additionalSeats === 0 && styles.seatButtonDisabled]} 
+              onPress={removeSeat}
+              disabled={additionalSeats === 0}
+            >
+              <Text style={styles.seatButtonText}>-</Text>
+            </TouchableOpacity>
+            <TouchableOpacity style={styles.seatButton} onPress={addSeat}>
+              <Text style={styles.seatButtonText}>+</Text>
+            </TouchableOpacity>
+          </View>
+          {additionalSeats > 0 && (
+            <Text style={styles.seatCostText}>
+              {`+$${additionalSeatsCost} for ${additionalSeats} additional ${additionalSeats === 1 ? 'seat' : 'seats'}`}
+            </Text>
+          )}
+        </View>
+      )}
+
       <View style={styles.featuresContainer}>
         {plan.features.map((feature, index) => (
           <View key={index} style={styles.featureItem}>
@@ -145,12 +226,13 @@ const PricingCard = ({ plan, isAnnual, navigation }) => {
           </View>
         ))}
       </View>
+
       <TouchableOpacity
         style={[
           styles.selectPlanButton,
           plan.recommended && styles.recommendedButton,
         ]}
-        onPress={() => console.log('Selected plan:', plan.name)}
+        onPress={() => navigation.navigate('Auth', { screen: 'SignUp' })}
       >
         <Text style={[
           styles.selectPlanButtonText,
@@ -700,33 +782,32 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'center',
     alignItems: 'center',
-    marginBottom: 32,
-    gap: 12,
+    marginBottom: 40,
+    marginTop: 20,
+    gap: 16,
   },
   billingOption: {
-    fontSize: 16,
-    color: '#E0F2F1', // Change text color to be visible on gradient
+    fontSize: 20,
+    color: '#E0F2F1',
+    fontWeight: '500',
   },
   billingOptionActive: {
-    color: COLORS.white, // Change text color to be visible on gradient
-    fontWeight: '600',
+    color: COLORS.white,
+    fontWeight: '700',
   },
   savingsText: {
-    color: COLORS.primary,
-    fontSize: 14,
+    color: '#FFEB3B',
+    fontSize: 16,
+    fontWeight: '600',
   },
   toggleTrack: {
-    width: 56,
-    height: 28,
-    backgroundColor: COLORS.primary,
-    borderRadius: 14,
-    padding: 2,
-  },
-  toggleThumb: {
-    width: 24,
-    height: 24,
-    backgroundColor: 'rgba(255,255,255,0.8)',
-    borderRadius: 12,
+    width: 80,
+    height: 40,
+    backgroundColor: 'rgba(0,0,0,0.3)',
+    borderWidth: 2,
+    borderColor: COLORS.white,
+    borderRadius: 20,
+    position: 'relative', // Important for absolute positioning of the thumb
   },
   pricingCardsContainer: {
     flexDirection: 'row',
@@ -742,43 +823,52 @@ const styles = StyleSheet.create({
     borderRadius: 12,
   },
   pricingCard: {
-    backgroundColor: COLORS.cardBackground,
+    backgroundColor: COLORS.white,
     borderRadius: 16,
     padding: 24,
     width: 320,
     minHeight: 520,
-    shadowColor: COLORS.primary,
-    shadowOffset: {
-      width: 6,
-      height: 8,
-    },
-    shadowOpacity: 0.15,
-    shadowRadius: 12,
-    elevation: 8,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.1,
+    shadowRadius: 10,
+    elevation: 5,
     position: 'relative',
+    overflow: 'visible',
     borderWidth: 2,
     borderColor: COLORS.primary,
   },
   recommendedCard: {
-    backgroundColor: COLORS.cardBackgroundAlt,
+    backgroundColor: COLORS.white,
     transform: [{ scale: 1.02 }],
+    borderWidth: 2,
+    borderColor: COLORS.primary,
   },
   recommendedBadge: {
     position: 'absolute',
-    top: -12,
-    left: '50%',
-    transform: [{ translateX: -60 }],
+    top: -15,
+    right: -10,
     backgroundColor: COLORS.primary,
     paddingHorizontal: 16,
-    paddingVertical: 6,
+    paddingVertical: 8,
     borderRadius: 20,
-    width: 120,
     alignItems: 'center',
+    zIndex: 1,
+    ...Platform.select({
+      web: {
+        boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
+        whiteSpace: 'nowrap',
+      },
+      default: {
+        elevation: 3,
+      },
+    }),
   },
   recommendedText: {
     color: '#FFF',
     fontSize: 14,
-    fontWeight: '600',
+    fontWeight: '700',
+    textAlign: 'center',
   },
   planName: {
     fontSize: 24,
@@ -827,7 +917,8 @@ const styles = StyleSheet.create({
   },
   selectPlanButton: {
     borderWidth: 2,
-    backgroundColor: COLORS.primary,
+    borderColor: COLORS.primary,
+    backgroundColor: 'transparent',
     borderRadius: 8,
     paddingVertical: 14,
     paddingHorizontal: 24,
@@ -836,11 +927,11 @@ const styles = StyleSheet.create({
     cursor: 'pointer',
   },
   recommendedButton: {
-    backgroundColor: COLORS.primaryDark,
-    borderColor: COLORS.primaryDark,
+    backgroundColor: COLORS.primary,
+    borderColor: COLORS.primary,
   },
   selectPlanButtonText: {
-    color: COLORS.white,
+    color: COLORS.primary,
     fontSize: 16,
     fontWeight: '600',
   },
@@ -955,7 +1046,7 @@ const styles = StyleSheet.create({
     paddingVertical: 4,
     borderRadius: 12,
   },
-  savingsText: {
+  savingsBadgeText: {
     color: '#FFF',
     fontSize: 12,
     fontWeight: '600',
@@ -1030,6 +1121,65 @@ const styles = StyleSheet.create({
   touchableContainer: {
     width: '100%',
     height: '100%',
+  },
+  seatControlContainer: {
+    marginTop: 20,
+    marginBottom: 20,
+    padding: 16,
+    backgroundColor: '#ECFDF5',
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: COLORS.primary,
+  },
+  seatControlTitle: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: COLORS.primary,
+    marginBottom: 8,
+    textAlign: 'center',
+  },
+  seatLabel: {
+    fontSize: 15,
+    color: COLORS.textDark,
+    marginBottom: 12,
+    textAlign: 'center',
+  },
+  seatButtonsRow: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    gap: 24,
+    marginVertical: 8,
+  },
+  seatButton: {
+    width: 44,
+    height: 44,
+    backgroundColor: COLORS.primary,
+    borderRadius: 22,
+    justifyContent: 'center',
+    alignItems: 'center',
+    ...Platform.select({
+      web: {
+        cursor: 'pointer',
+        ':hover': {
+          backgroundColor: COLORS.primaryDark,
+        }
+      }
+    }),
+  },
+  seatButtonDisabled: {
+    backgroundColor: '#CBD5E1',
+  },
+  seatButtonText: {
+    fontSize: 24,
+    fontWeight: 'bold',
+    color: COLORS.white,
+  },
+  seatCostText: {
+    fontSize: 16,
+    color: COLORS.primary,
+    marginTop: 12,
+    textAlign: 'center',
+    fontWeight: '600',
   },
 });
 
