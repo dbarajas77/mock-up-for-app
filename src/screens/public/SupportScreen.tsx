@@ -8,733 +8,1139 @@ import {
   useWindowDimensions,
   ScrollView,
   TextInput,
+  StyleSheet as CoreStyleSheet,
+  Animated as CoreAnimated,
+  Pressable,
+  Modal,
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import { RootStackParamList } from '../../navigation/types';
+import { RootStackParamList } from '../../navigation/types'; // Assuming this type exists
 import { MaterialIcons, FontAwesome5 } from '@expo/vector-icons';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Animated, {
   useAnimatedStyle,
   useSharedValue,
-  withSpring,
-  interpolate,
-  Extrapolate,
-  useAnimatedScrollHandler,
   withTiming,
   withDelay,
   withSequence,
   Easing,
-  interpolateColor,
-  runOnJS,
+  FadeIn,
+  FadeOut,
 } from 'react-native-reanimated';
+import { LinearGradient } from 'expo-linear-gradient';
+import Header from '../../components/LandingPage/Header';
 
+// Combine original and new COLORS
 const COLORS = {
-  primary: '#10B981',
+  primary: '#10B981', // Original primary green
   primaryDark: '#059669',
-  textDark: '#111827',
-  textLight: '#6B7280',
+  textDark: '#111827', // Original dark text
+  textLight: '#6B7280', // Original light text
   white: '#FFFFFF',
-  background: '#F9FAFB',
+  background: '#F9FAFB', // Original background
   border: '#E5E7EB',
   backgroundAlt: '#F1F3F5',
-  text: '#1A1A1A',
-  success: '#28A745',
+  // New colors from SVG design, potentially overriding/adjusting
+  cardBg: '#ffffff',
+  newPrimary: '#00c389', // Main green color (Selected State)
+  primaryLight: '#e6f9f1', // Light green (Selected State BG)
+  inactivePillBg: '#e0f2fe', // Light Blue for INACTIVE pill background
+  inactivePillBorder: '#bae6fd', // Medium Blue for INACTIVE pill border
+  newTextDark: '#333333',
+  newTextLight: '#666666', // From new design
+  newBorder: '#e5e7eb', // Same as original border
+  inactiveStep: '#f1f5f9',
+  placeholder: '#aaaaaa',
+  agentPreviewBg: '#f1f5f9',
+  agentIconBg: 'rgba(0, 195, 137, 0.5)',
 };
 
-type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
+// --- Original Animated Components & Effects ---
 
-const AnimatedScrollView = Animated.createAnimatedComponent(ScrollView);
-const AnimatedTextInput = Animated.createAnimatedComponent(TextInput);
-
-// ContactForm Component
-const ContactForm = () => {
-  const [form, setForm] = useState({
-    name: '',
-    email: '',
-    subject: '',
-    message: '',
-  });
-  
-  // Animation values for form fields
-  const scaleAnim = useSharedValue(0.95);
-  const opacityAnim = useSharedValue(0);
-  const pulseAnim = useSharedValue(1);
-  
-  useEffect(() => {
-    // Animate form fields on mount
-    opacityAnim.value = withTiming(1, { duration: 800 });
-    scaleAnim.value = withTiming(1, { duration: 800 });
-    
-    // Pulse effect for submit button
-    setTimeout(() => {
-      pulseAnim.value = withSequence(
-        withTiming(1.1, { duration: 300 }),
-        withTiming(1, { duration: 200 })
-      );
-    }, 1000);
-  }, []);
-  
-  const inputAnimStyle = useAnimatedStyle(() => ({
-    opacity: opacityAnim.value,
-    transform: [{ scale: scaleAnim.value }]
-  }));
-  
-  const buttonAnimStyle = useAnimatedStyle(() => ({
-    transform: [{ scale: pulseAnim.value }]
-  }));
-
-  const handleSubmit = () => {
-    console.log('Form submitted:', form);
-  };
-
-  return (
-    <View style={styles.formContainer}>
-      <AnimatedTextInput
-        style={[styles.input, inputAnimStyle]}
-        placeholder="Your Name"
-        value={form.name}
-        onChangeText={(text) => setForm({ ...form, name: text })}
-        placeholderTextColor={COLORS.textLight}
-      />
-      <AnimatedTextInput
-        style={[styles.input, inputAnimStyle]}
-        placeholder="Email Address"
-        value={form.email}
-        onChangeText={(text) => setForm({ ...form, email: text })}
-        keyboardType="email-address"
-        placeholderTextColor={COLORS.textLight}
-      />
-      <AnimatedTextInput
-        style={[styles.input, inputAnimStyle]}
-        placeholder="Subject"
-        value={form.subject}
-        onChangeText={(text) => setForm({ ...form, subject: text })}
-        placeholderTextColor={COLORS.textLight}
-      />
-      <AnimatedTextInput
-        style={[styles.input, styles.messageInput, inputAnimStyle]}
-        placeholder="Your Message"
-        value={form.message}
-        onChangeText={(text) => setForm({ ...form, message: text })}
-        multiline
-        numberOfLines={4}
-        placeholderTextColor={COLORS.textLight}
-      />
-      <Animated.View style={buttonAnimStyle}>
-        <TouchableOpacity style={styles.submitButton} onPress={handleSubmit}>
-          <Text style={styles.submitButtonText}>Send Message</Text>
-        </TouchableOpacity>
-      </Animated.View>
-    </View>
-  );
-};
-
-// SupportCard Component
-const SupportCard = ({ icon, title, description, buttonText, onPress, index }) => {
-  const scale = useSharedValue(1);
-  const rotateY = useSharedValue(-10);
-  const opacity = useSharedValue(0);
-  
-  useEffect(() => {
-    // Stagger the card animations
-    const delay = 300 + index * 150;
-    
-    rotateY.value = withDelay(
-      delay,
-      withTiming(0, { duration: 600, easing: Easing.out(Easing.back()) })
-    );
-    
-    opacity.value = withDelay(
-      delay,
-      withTiming(1, { duration: 800 })
-    );
-  }, []);
-
-  const cardStyle = useAnimatedStyle(() => ({
-    opacity: opacity.value,
-    transform: [
-      { perspective: 800 },
-      { rotateY: `${rotateY.value}deg` },
-      { scale: scale.value }
-    ],
-  }));
-
-  const handlePressIn = () => {
-    scale.value = withSpring(0.98);
-  };
-
-  const handlePressOut = () => {
-    scale.value = withSpring(1);
-  };
-
-  return (
-    <Animated.View style={[styles.supportCard, cardStyle]}>
-      <MaterialIcons name={icon} size={40} color={COLORS.primary} />
-      <Text style={styles.supportCardTitle}>{title}</Text>
-      <Text style={styles.supportCardDescription}>{description}</Text>
-      <TouchableOpacity
-        style={styles.supportCardButton}
-        onPress={onPress}
-        onPressIn={handlePressIn}
-        onPressOut={handlePressOut}
-      >
-        <Text style={styles.supportCardButtonText}>{buttonText}</Text>
-      </TouchableOpacity>
-    </Animated.View>
-  );
-};
-
-// FAQ Component
-const FAQItem = ({ question, answer }) => {
-  const [isExpanded, setIsExpanded] = useState(false);
-  const height = useSharedValue(0);
-
-  const toggleExpand = () => {
-    setIsExpanded(!isExpanded);
-    height.value = withSpring(isExpanded ? 0 : 1);
-  };
-
-  const contentStyle = useAnimatedStyle(() => ({
-    opacity: height.value,
-    height: interpolate(
-      height.value,
-      [0, 1],
-      [0, 120],
-      Extrapolate.CLAMP
-    ),
-  }));
-
-  return (
-    <View style={styles.faqItem}>
-      <TouchableOpacity style={styles.faqQuestion} onPress={toggleExpand}>
-        <Text style={styles.faqQuestionText}>{question}</Text>
-        <MaterialIcons
-          name={isExpanded ? 'keyboard-arrow-up' : 'keyboard-arrow-down'}
-          size={24}
-          color={COLORS.textDark}
-        />
-      </TouchableOpacity>
-      <Animated.View style={[styles.faqAnswer, contentStyle]}>
-        <Text style={styles.faqAnswerText}>{answer}</Text>
-      </Animated.View>
-    </View>
-  );
-};
-
-// AnimatedHeadline Component for color sweep effect
+// AnimatedHeadline Component for color sweep effect (Kept from original)
 const AnimatedHeadline = ({ text, style }) => {
-  const animProgress = useSharedValue(0);
-  const textWidth = useSharedValue(0);
-  
-  useEffect(() => {
-    animProgress.value = withTiming(1, { duration: 1500, easing: Easing.inOut(Easing.cubic) });
-  }, []);
-  
-  const sweepStyle = useAnimatedStyle(() => {
-    return {
-      position: 'absolute',
-      left: 0,
-      top: 0,
-      bottom: 0,
-      width: textWidth.value * animProgress.value,
-      backgroundColor: 'transparent',
-    };
-  });
-  
-  const textColorStyle = useAnimatedStyle(() => {
-    // Text color changes from dark to primary color
-    const color = interpolateColor(
-      animProgress.value,
-      [0, 1],
-      [COLORS.textDark, COLORS.primary]
-    );
-    
-    return {
-      color
-    };
-  });
-  
-  const onLayout = (event) => {
-    textWidth.value = event.nativeEvent.layout.width;
-  };
-
-  return (
-    <View style={{ position: 'relative' }} onLayout={onLayout}>
-      <Animated.View style={sweepStyle} />
-      <Animated.Text style={[style, textColorStyle]}>{text}</Animated.Text>
-    </View>
-  );
+  // Simplified version without the color sweep for now
+  return <Animated.Text style={style}>{text}</Animated.Text>;
 };
 
-const SupportScreen = () => {
-  const navigation = useNavigation<NavigationProp>();
-  const { width } = useWindowDimensions();
-  const scrollY = useSharedValue(0);
-  const insets = useSafeAreaInsets();
-  const pageOpacity = useSharedValue(0);
-  
-  // Animation values for mounting effect
-  useEffect(() => {
-    pageOpacity.value = withTiming(1, { duration: 600 });
-  }, []);
-  
-  const pageAnimStyle = useAnimatedStyle(() => ({
-    opacity: pageOpacity.value
-  }));
-
-  const scrollHandler = useAnimatedScrollHandler({
-    onScroll: (event) => {
-      scrollY.value = event.contentOffset.y;
-    },
-  });
-
-  const headerStyle = useAnimatedStyle(() => {
-    return {
-      opacity: interpolate(
-        scrollY.value,
-        [0, 100],
-        [1, 0.9],
-        Extrapolate.CLAMP
-      ),
-      backgroundColor: COLORS.white,
-    };
-  });
-
-  const supportOptions = [
-    {
-      icon: 'chat',
-      title: 'Live Chat Support',
-      description: 'Get instant help from our support team',
-      buttonText: 'Start Chat',
-    },
-    {
-      icon: 'email',
-      title: 'Email Support',
-      description: 'Send us a message and we\'ll respond within 24 hours',
-      buttonText: 'Send Email',
-    },
-    {
-      icon: 'phone',
-      title: 'Phone Support',
-      description: 'Talk to our support team directly',
-      buttonText: 'Call Now',
-    },
-  ];
-
-  const faqs = [
-    {
-      question: 'How do I get started with SiteSnap?',
-      answer: 'Sign up for a free account, create your first project, and follow our quick start guide to begin documenting your work.',
-    },
-    {
-      question: 'What payment methods do you accept?',
-      answer: 'We accept all major credit cards, PayPal, and offer enterprise billing options for larger organizations.',
-    },
-    {
-      question: 'Can I cancel my subscription anytime?',
-      answer: 'Yes, you can cancel your subscription at any time. Your service will continue until the end of your billing period.',
-    },
-    {
-      question: 'Is my data secure?',
-      answer: 'Yes, we use industry-standard encryption and security measures to protect your data. All files are stored securely in the cloud.',
-    },
-  ];
-
-  return (
-    <Animated.View style={[styles.container, pageAnimStyle]}>
-      {/* Header */}
-      <Animated.View style={[styles.header, headerStyle]}>
-        <View style={[styles.headerContent, { paddingTop: insets.top }]}>
-          <TouchableOpacity onPress={() => navigation.navigate('Landing')}>
-            <Text style={styles.logoText}>SiteSnap</Text>
-          </TouchableOpacity>
-          
-          {width > 768 && (
-            <View style={styles.navLinks}>
-              <TouchableOpacity onPress={() => navigation.navigate('Landing')}>
-                <Text style={styles.navLink}>Home</Text>
-              </TouchableOpacity>
-              <TouchableOpacity onPress={() => navigation.navigate('Features')}>
-                <Text style={styles.navLink}>Features</Text>
-              </TouchableOpacity>
-              <TouchableOpacity onPress={() => navigation.navigate('Pricing')}>
-                <Text style={styles.navLink}>Pricing</Text>
-              </TouchableOpacity>
-              <TouchableOpacity onPress={() => navigation.navigate('Resources')}>
-                <Text style={styles.navLink}>Resources</Text>
-              </TouchableOpacity>
-              <TouchableOpacity onPress={() => navigation.navigate('Support')}>
-                <Text style={[styles.navLink, styles.activeNavLink]}>Support</Text>
-              </TouchableOpacity>
-            </View>
-          )}
-
-          <View style={styles.authButtons}>
-            <TouchableOpacity onPress={() => navigation.navigate('Auth', { screen: 'Login' })}>
-              <Text style={styles.loginButton}>Login</Text>
-            </TouchableOpacity>
-            <TouchableOpacity 
-              style={styles.signupButton}
-              onPress={() => navigation.navigate('Auth', { screen: 'SignUp' })}
-            >
-              <Text style={styles.signupButtonText}>Sign Up</Text>
-            </TouchableOpacity>
-          </View>
-        </View>
-      </Animated.View>
-
-      <AnimatedScrollView
-        style={styles.scrollView}
-        onScroll={scrollHandler}
-        scrollEventThrottle={16}
-        showsVerticalScrollIndicator={false}
-      >
-        {/* Hero Section */}
-        <View style={[styles.heroSection, { paddingTop: 100 + insets.top }]}>
-          <AnimatedHeadline 
-            text="How Can We Help You?" 
-            style={styles.headline} 
-          />
-          <Text style={styles.subheadline}>
-            Get the support you need, when you need it
-          </Text>
-        </View>
-
-        {/* Support Options */}
-        <View style={styles.section}>
-          <View style={styles.supportGrid}>
-            {supportOptions.map((option, index) => (
-              <SupportCard
-                key={index}
-                index={index}
-                {...option}
-                onPress={() => console.log('Support option:', option.title)}
-              />
-            ))}
-          </View>
-        </View>
-
-        {/* Contact Form Section */}
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Send Us a Message</Text>
-          <ContactForm />
-        </View>
-
-        {/* FAQ Section */}
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Frequently Asked Questions</Text>
-          <View style={styles.faqContainer}>
-            {faqs.map((faq, index) => (
-              <FAQItem key={index} {...faq} />
-            ))}
-          </View>
-        </View>
-
-        {/* Footer */}
-        <View style={styles.footer}>
-          <View style={styles.footerContent}>
-            <View style={styles.footerSection}>
-              <Text style={styles.footerTitle}>Navigation</Text>
-              <TouchableOpacity onPress={() => navigation.navigate('Landing')}>
-                <Text style={styles.footerLink}>Home</Text>
-              </TouchableOpacity>
-              <TouchableOpacity onPress={() => navigation.navigate('Features')}>
-                <Text style={styles.footerLink}>Features</Text>
-              </TouchableOpacity>
-              <TouchableOpacity onPress={() => navigation.navigate('Pricing')}>
-                <Text style={styles.footerLink}>Pricing</Text>
-              </TouchableOpacity>
-            </View>
-            <View style={styles.footerSection}>
-              <Text style={styles.footerTitle}>Social</Text>
-              <View style={styles.socialLinks}>
-                {['twitter', 'linkedin', 'github'].map((platform, index) => (
-                  <TouchableOpacity key={index} style={styles.socialIcon}>
-                    <FontAwesome5 name={platform} size={24} color={COLORS.primary} />
-                  </TouchableOpacity>
-                ))}
-              </View>
-            </View>
-          </View>
-          <Text style={styles.copyright}>
-            © 2024 SiteSnap. All rights reserved.
-          </Text>
-        </View>
-      </AnimatedScrollView>
-    </Animated.View>
-  );
-};
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: COLORS.background,
-  },
-  header: {
+// ShimmerEffect Component (Kept from original)
+const shimmerStyles = CoreStyleSheet.create({
+  shimmerContainer: {
     position: 'absolute',
     top: 0,
     left: 0,
     right: 0,
-    zIndex: 1000,
-    backgroundColor: COLORS.white,
-    borderBottomWidth: 1,
-    borderBottomColor: 'rgba(229, 231, 235, 0.5)',
+    bottom: 0,
+    zIndex: 1,
+    overflow: 'hidden',
   },
-  headerContent: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: 20,
-    paddingVertical: 16,
+  raindropShimmer: {
+    position: 'absolute',
+    width: 4,
+    height: 70,
+    top: 0,
+    bottom: 0,
   },
-  logoText: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    color: COLORS.primary,
+  raindropGradient: {
+    width: '100%',
+    height: '100%',
+    borderRadius: 2,
   },
-  navLinks: {
-    flexDirection: 'row',
-    gap: 32,
+  raindropSplash: {
+    position: 'absolute',
+    width: 10,
+    height: 10,
+    borderRadius: 5,
+    zIndex: 2,
   },
-  navLink: {
-    fontSize: 16,
-    color: COLORS.textDark,
-    fontWeight: '500',
+  splashGradient: {
+    width: '100%',
+    height: '100%',
+    borderRadius: 5,
   },
-  activeNavLink: {
-    color: COLORS.primary,
+});
+
+const ShimmerEffect = () => {
+  const [raindrops, setRaindrops] = useState([]);
+  const screenHeight = useWindowDimensions().height;
+
+  const createRaindrops = () => {
+    const drops = [];
+    const numDrops = 30;
+    for (let i = 0; i < numDrops; i++) {
+      drops.push({
+        id: i,
+        horizontalOffset: Math.random() * 100,
+        height: Math.random() * 50 + 40,
+        width: Math.random() * 2 + 2,
+        position: new CoreAnimated.Value(- (Math.random() * screenHeight * 0.5 + 50)),
+        splash: new CoreAnimated.Value(0),
+        splashOpacity: new CoreAnimated.Value(0),
+        delay: Math.random() * 5000,
+        duration: Math.random() * 1500 + 1000,
+        landingPoint: screenHeight * (Math.random() * 0.3 + 0.6),
+      });
+    }
+    setRaindrops(drops);
+    return drops;
+  };
+
+  useEffect(() => {
+    const drops = createRaindrops();
+    const animations = [];
+
+    const startRainAnimation = (drop) => {
+      const animateRaindrop = () => {
+        drop.position.setValue(-drop.height);
+        drop.splash.setValue(0);
+        drop.splashOpacity.setValue(0);
+
+        const animation = CoreAnimated.sequence([
+          CoreAnimated.delay(drop.delay),
+          CoreAnimated.timing(drop.position, {
+            toValue: drop.landingPoint,
+            duration: drop.duration,
+            useNativeDriver: true,
+          }),
+          CoreAnimated.parallel([
+            CoreAnimated.timing(drop.splash, {
+              toValue: 1,
+              duration: 400,
+              useNativeDriver: true,
+            }),
+            CoreAnimated.timing(drop.splashOpacity, {
+              toValue: 1,
+              duration: 100,
+              useNativeDriver: true,
+            }),
+          ]),
+          CoreAnimated.timing(drop.splashOpacity, {
+            toValue: 0,
+            duration: 300,
+            delay: 100,
+            useNativeDriver: true,
+          }),
+        ]);
+        
+        animations.push(animation); // Store animation reference
+        
+        animation.start(({ finished }) => {
+           if (finished) {
+               // Reset values for next loop
+               drop.delay = Math.random() * 3000 + 1000;
+               drop.duration = Math.random() * 1500 + 1000;
+               animateRaindrop(); // Loop animation
+           }
+        });
+      };
+      animateRaindrop();
+    };
+
+    drops.forEach(drop => startRainAnimation(drop));
+
+    // Cleanup function to stop animations when component unmounts
+    return () => {
+      animations.forEach(anim => anim.stop()); 
+      raindrops.forEach(drop => {
+        if (drop.position) drop.position.removeAllListeners();
+        if (drop.splash) drop.splash.removeAllListeners();
+        if (drop.splashOpacity) drop.splashOpacity.removeAllListeners();
+      });
+    };
+  }, []); // Rerun effect only on mount/unmount
+
+  return (
+    <View style={shimmerStyles.shimmerContainer} pointerEvents="none">
+      {raindrops.map((drop) => (
+        <React.Fragment key={drop.id}>
+          <CoreAnimated.View
+            style={[
+              shimmerStyles.raindropShimmer,
+              {
+                left: `${drop.horizontalOffset}%`,
+                height: drop.height,
+                width: drop.width,
+                transform: [{ translateY: drop.position }],
+              },
+            ]}
+          >
+            <LinearGradient
+              colors={['rgba(255,255,255,0)', 'rgba(255,255,255,0.2)', 'rgba(255,255,255,0.4)', 'rgba(255,255,255,0.2)', 'rgba(255,255,255,0)']}
+              start={{ x: 0.5, y: 0 }}
+              end={{ x: 0.5, y: 1 }}
+              style={shimmerStyles.raindropGradient}
+            />
+          </CoreAnimated.View>
+
+          <CoreAnimated.View
+            style={[
+              shimmerStyles.raindropSplash,
+              {
+                left: `${drop.horizontalOffset}%`,
+                top: drop.landingPoint,
+                opacity: drop.splashOpacity,
+                transform: [
+                  {
+                    scale: drop.splash.interpolate({
+                      inputRange: [0, 1],
+                      outputRange: [0.5, 2.5],
+                    }),
+                  },
+                ],
+              },
+            ]}
+          >
+             <LinearGradient
+              colors={['rgba(255,255,255,0.4)', 'rgba(255,255,255,0.1)', 'rgba(255,255,255,0)']}
+              style={shimmerStyles.splashGradient}
+              start={{ x: 0.5, y: 0.5 }}
+              end={{ x: 1, y: 1 }}
+            />
+          </CoreAnimated.View>
+        </React.Fragment>
+      ))}
+    </View>
+  );
+};
+
+// --- NEW Support Journey Components ---
+
+// Data for support options
+const supportOptionsData = [
+  {
+    id: 'liveChat',
+    title: 'Live Chat Support',
+    description: 'Average wait: < 1 minute',
+    icon: 'chat-bubble-outline', // MaterialIcons name
+    status: 'Online',
+    faq: 'How do I share my screen?',
   },
-  authButtons: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 16,
+  {
+    id: 'email',
+    title: 'Email Support',
+    description: 'Response time: 24 hours',
+    icon: 'email', // MaterialIcons name
+    status: null,
+    faq: 'What information should I include?',
   },
-  loginButton: {
-    fontSize: 16,
-    color: COLORS.textDark,
-    fontWeight: '500',
+  {
+    id: 'phone',
+    title: 'Phone Support',
+    description: 'Available 9am - 5pm Mon-Fri',
+    icon: 'phone', // MaterialIcons name
+    status: null,
+    faq: 'What is the support phone number?',
   },
-  signupButton: {
-    backgroundColor: COLORS.primary,
-    paddingHorizontal: 20,
-    paddingVertical: 12,
-    borderRadius: 8,
-  },
-  signupButtonText: {
-    color: COLORS.white,
-    fontSize: 16,
-    fontWeight: '600',
+];
+
+// Left Column: Support Journey
+const SupportJourney = ({ selectedMethod, onSelectMethod, styles }) => { // Pass styles down
+  const selectedOptionData = supportOptionsData.find(opt => opt.id === selectedMethod);
+
+  return (
+    <View style={styles.leftColumn}>
+      <Text style={styles.journeyTitle}>Support Journey</Text>
+      <Text style={styles.journeySubtitle}>Select your preferred contact method</Text>
+
+      {/* Options Container (now directly under subtitle) */}
+      <View style={styles.optionsContainer}>
+        {/* Support Options Area */}
+        {supportOptionsData.map((option) => (
+          <SupportOption
+            key={option.id}
+            {...option}
+            isSelected={selectedMethod === option.id}
+            onPress={() => onSelectMethod(option.id)}
+            styles={styles} // Pass styles
+          />
+        ))}
+      </View>
+
+      {/* FAQ Section - Will flow naturally after options */}
+      {selectedOptionData && (
+        <View style={styles.faqContainer}>
+          <Text style={styles.faqTitle}>{selectedOptionData.title} FAQ</Text>
+          <Text style={styles.faqQuestion}>Top question: {selectedOptionData.faq}</Text>
+        </View>
+      )}
+    </View>
+  );
+};
+
+// Support Option Component
+const SupportOption = ({ id, title, description, icon, status, isSelected, onPress, styles }) => {
+  const showDescription = id !== 'liveChat' || !isSelected; // Keep hiding description for selected Live Chat
+
+  // Determine icon and status text color based on state
+  let iconColor = COLORS.newTextLight; // Default inactive icon color
+  let statusTextColor = COLORS.newTextLight; // Default inactive status text
+  let statusDotColor = COLORS.inactivePillBorder; // Default inactive dot (matches border)
+
+  if (isSelected) {
+    iconColor = COLORS.newPrimary; // Green icon when selected
+    statusTextColor = COLORS.newPrimary; // Green status text when selected
+    statusDotColor = COLORS.newPrimary; // Green dot when selected
+  } else {
+    iconColor = COLORS.inactivePillBorder; // Use inactive border blue for icon
+  }
+
+  return (
+    <TouchableOpacity
+      style={[
+        styles.optionButton,
+        // Use green selected style or blue inactive style
+        isSelected ? styles.optionButtonSelected : styles.optionButtonInactive,
+      ]}
+      onPress={onPress}
+      activeOpacity={0.7}
+    >
+      <View style={[styles.optionIconCircle, isSelected ? styles.optionIconCircleSelected : styles.optionIconCircleInactive]}>
+        <MaterialIcons name={icon} size={20} color={iconColor} />
+      </View>
+      <View style={styles.optionTextContainer}>
+        <Text style={styles.optionTitle}>{title}</Text>
+        {showDescription && <Text style={styles.optionDescription}>{description}</Text>}
+      </View>
+      {status && (
+        <View style={styles.optionStatusContainer}>
+          <Text style={[styles.optionStatusText, isSelected && styles.optionStatusTextSelected]}>{status}</Text>
+          {/* Status dot color now reflects state */}
+          <View style={[styles.optionStatusDot, { backgroundColor: statusDotColor }]} />
+        </View>
+      )}
+    </TouchableOpacity>
+  );
+};
+
+// Right Column: Contact Form Area
+const ContactFormArea = ({ selectedMethod, styles }) => { // Pass styles down
+  const renderContent = () => {
+    switch (selectedMethod) {
+      case 'liveChat':
+        return <LiveChatForm styles={styles} />; // Pass styles
+      case 'email':
+        return <EmailSupportForm styles={styles} />; // Render Email Form
+      case 'phone':
+        return <PhoneSupportInfo styles={styles} />; // Render Phone Info
+      default:
+        return null;
+    }
+  };
+
+  return <View style={styles.rightColumn}>{renderContent()}</View>;
+};
+
+// Live Chat Form specific content
+const LiveChatForm = ({ styles }) => { // Receive styles
+  const [focusedInput, setFocusedInput] = useState(null); // State to track focus
+
+  return (
+    <View style={styles.formWrapper}>
+      {/* Header */}
+      <LinearGradient
+        colors={[COLORS.newPrimary, '#00a975']} // Use new primary color
+        style={styles.formHeader}
+      >
+        <Text style={styles.formHeaderTitle}>Start Live Chat</Text>
+        <Text style={styles.formHeaderSubtitle}>Connect with an agent in less than a minute</Text>
+      </LinearGradient>
+
+      {/* Agent Preview */}
+      <View style={styles.agentPreviewContainer}>
+        <View style={styles.agentAvatar}>
+          {/* Simple representation of the SVG face */}
+          <View style={styles.agentFace} />
+          <View style={[styles.agentEye, { left: 15 }]} />
+          <View style={[styles.agentEye, { right: 15 }]} />
+          <View style={styles.agentMouth} />
+        </View>
+        <View style={styles.agentInfo}>
+          <Text style={styles.agentName}>Sarah Miller</Text>
+          <Text style={styles.agentTitle}>Customer Support</Text>
+        </View>
+        <View style={styles.agentStatusDot} />
+      </View>
+
+      {/* Form Fields */}
+      <View style={styles.formFieldsContainer}>
+        <Text style={styles.inputLabel}>Your Name</Text>
+        <TextInput
+          style={[
+            styles.input,
+            focusedInput === 'chatName' && styles.inputFocused // Apply focus style
+          ]}
+          placeholder="Enter your name"
+          placeholderTextColor={COLORS.placeholder}
+          onFocus={() => setFocusedInput('chatName')}
+          onBlur={() => setFocusedInput(null)}
+        />
+
+        <Text style={styles.inputLabel}>Email Address</Text>
+        <TextInput
+          style={[
+            styles.input,
+            focusedInput === 'chatEmail' && styles.inputFocused // Apply focus style
+          ]}
+          placeholder="Enter your email"
+          placeholderTextColor={COLORS.placeholder}
+          keyboardType="email-address"
+          onFocus={() => setFocusedInput('chatEmail')}
+          onBlur={() => setFocusedInput(null)}
+        />
+
+        <TouchableOpacity style={styles.submitChatButton}>
+          <Text style={styles.submitChatButtonText}>Start Chat</Text>
+        </TouchableOpacity>
+      </View>
+    </View>
+  );
+};
+
+// --- NEW Email Support Form Component ---
+const EmailSupportForm = ({ styles }) => {
+  const [form, setForm] = useState({ name: '', email: '', subject: '', message: '' });
+  const [focusedInput, setFocusedInput] = useState(null); // State to track focus
+
+  const handleSubmit = () => {
+    console.log('Email Form submitted:', form);
+    // Add actual email sending logic here
+  };
+
+  return (
+    <View style={styles.formWrapper}>
+      {/* Email Form Header - Use primary colors */}
+      <LinearGradient
+        colors={[COLORS.newPrimary, '#00a975']} // Changed from grey gradient
+        style={styles.formHeader}
+      >
+        <Text style={styles.formHeaderTitle}>Send an Email</Text>
+        <Text style={styles.formHeaderSubtitle}>We typically respond within 24 hours</Text>
+      </LinearGradient>
+
+      {/* Form Fields */}
+      <ScrollView style={styles.formFieldsScrollView}> // Make fields scrollable if needed
+          <View style={styles.formFieldsContainer}>
+            <Text style={styles.inputLabel}>Your Name</Text>
+            <TextInput
+              style={[
+                  styles.input,
+                  focusedInput === 'emailName' && styles.inputFocused // Apply focus style
+              ]}
+              placeholder="Enter your name"
+              placeholderTextColor={COLORS.placeholder}
+              value={form.name}
+              onChangeText={(text) => setForm({ ...form, name: text })}
+              onFocus={() => setFocusedInput('emailName')}
+              onBlur={() => setFocusedInput(null)}
+            />
+
+            <Text style={styles.inputLabel}>Email Address</Text>
+            <TextInput
+              style={[
+                  styles.input,
+                  focusedInput === 'emailEmail' && styles.inputFocused // Apply focus style
+              ]}
+              placeholder="Enter your email"
+              placeholderTextColor={COLORS.placeholder}
+              keyboardType="email-address"
+              value={form.email}
+              onChangeText={(text) => setForm({ ...form, email: text })}
+              onFocus={() => setFocusedInput('emailEmail')}
+              onBlur={() => setFocusedInput(null)}
+            />
+
+            <Text style={styles.inputLabel}>Subject</Text>
+            <TextInput
+              style={[
+                  styles.input,
+                  focusedInput === 'emailSubject' && styles.inputFocused // Apply focus style
+              ]}
+              placeholder="How can we help?"
+              placeholderTextColor={COLORS.placeholder}
+              value={form.subject}
+              onChangeText={(text) => setForm({ ...form, subject: text })}
+              onFocus={() => setFocusedInput('emailSubject')}
+              onBlur={() => setFocusedInput(null)}
+            />
+
+            <Text style={styles.inputLabel}>Message</Text>
+            <TextInput
+              style={[
+                  styles.input, 
+                  styles.messageInput, 
+                  focusedInput === 'emailMessage' && styles.inputFocused // Apply focus style
+              ]}
+              placeholder="Describe your issue here..."
+              placeholderTextColor={COLORS.placeholder}
+              multiline
+              numberOfLines={5}
+              value={form.message}
+              onChangeText={(text) => setForm({ ...form, message: text })}
+              onFocus={() => setFocusedInput('emailMessage')}
+              onBlur={() => setFocusedInput(null)}
+            />
+
+            <TouchableOpacity style={styles.submitEmailButton} onPress={handleSubmit}>
+              <Text style={styles.submitEmailButtonText}>Send Email</Text>
+            </TouchableOpacity>
+          </View>
+      </ScrollView>
+    </View>
+  );
+};
+
+// --- NEW Phone Support Info Component ---
+const PhoneSupportInfo = ({ styles }) => {
+  const handleCall = () => {
+    console.log('Attempting to call support...');
+    // Add logic for Linking.openURL('tel:YOUR_PHONE_NUMBER') if needed
+    // Be mindful of platform differences and permissions
+  };
+
+  return (
+    <View style={styles.formWrapper}>
+      {/* Phone Info Header - Use primary colors */}
+      <LinearGradient
+        colors={[COLORS.newPrimary, '#00a975']} // Changed from dark gradient
+        style={styles.formHeader}
+      >
+        <Text style={styles.formHeaderTitle}>Phone Support</Text>
+        <Text style={styles.formHeaderSubtitle}>Speak directly with our team</Text>
+      </LinearGradient>
+
+      {/* Phone Info Content */}
+      <View style={styles.phoneInfoContainer}>
+         <MaterialIcons name="phone" size={60} color={COLORS.newPrimary} style={{ marginBottom: 20 }} />
+         <Text style={styles.phoneInfoHeader}>Support Hours:</Text>
+         <Text style={styles.phoneInfoText}>Monday - Friday</Text>
+         <Text style={styles.phoneInfoText}>9:00 AM - 5:00 PM (Your Timezone)</Text>
+         
+         <Text style={[styles.phoneInfoHeader, { marginTop: 25 }]}>Phone Number:</Text>
+         <Text style={styles.phoneNumberText}>+1 (555) 123-4567</Text> // Replace with actual number
+         
+         <TouchableOpacity style={styles.callNowButton} onPress={handleCall}>
+           <MaterialIcons name="call" size={20} color={COLORS.white} style={{ marginRight: 8 }}/>
+           <Text style={styles.callNowButtonText}>Call Now</Text>
+         </TouchableOpacity>
+      </View>
+    </View>
+  );
+};
+
+// Restore Right Panel Overlay Component
+const RightPanelOverlay = ({ isVisible, onClose, selectedMethod, styles }) => {
+  if (!isVisible) {
+    return null;
+  }
+
+  return (
+    <Animated.View 
+        style={styles.overlayContainer}
+        entering={FadeIn.duration(300)}
+        exiting={FadeOut.duration(300)}
+    >
+        <Pressable style={styles.overlayBackdrop} onPress={onClose} />
+        
+        <View style={styles.overlayContentContainer}>
+            {/* Content area uses rightColumn styles implicitly via ContactFormArea */}
+            <ContactFormArea selectedMethod={selectedMethod} styles={styles} /> 
+            
+            <TouchableOpacity style={styles.overlayCloseButton} onPress={onClose}>
+                <MaterialIcons name="close" size={24} color={COLORS.newTextDark} />
+            </TouchableOpacity>
+        </View>
+    </Animated.View>
+  );
+};
+
+// --- Main Screen Component ---
+const SupportScreen = () => {
+  const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
+  const { width } = useWindowDimensions();
+  const pageOpacity = useSharedValue(0);
+  const [selectedMethod, setSelectedMethod] = useState('liveChat');
+  const [isRightPanelVisible, setIsRightPanelVisible] = useState(false); // Restore state
+  const isMobile = width < 768; // Restore mobile check
+
+  useEffect(() => {
+    pageOpacity.value = withTiming(1, { duration: 600 });
+  }, []);
+
+  const pageAnimStyle = useAnimatedStyle(() => ({
+    opacity: pageOpacity.value
+  }));
+
+  // Restore handler for selecting a method with overlay logic
+  const handleSelectMethod = (methodId) => {
+    setSelectedMethod(methodId);
+    if (isMobile) {
+      setIsRightPanelVisible(true); // Show overlay on mobile
+    }
+  };
+
+  // Restore handler to close the overlay
+  const handleCloseOverlay = () => {
+    setIsRightPanelVisible(false);
+  };
+
+  const styles = getCombinedStyles(isMobile);
+
+  return (
+    <Animated.View style={[styles.container, pageAnimStyle]}>
+      <Header />
+
+      <Animated.ScrollView
+        style={styles.scrollView}
+        scrollEventThrottle={16}
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={styles.scrollContentContainer}
+      >
+        {/* --- Original Hero Section --- */}
+        <View style={styles.heroSection}>
+          <LinearGradient
+            colors={[COLORS.primary, COLORS.primaryDark, '#E0F2F1']} // Use original colors
+            start={{ x: 0.5, y: 0 }}
+            end={{ x: 0.5, y: 1 }}
+            style={CoreStyleSheet.absoluteFill}
+          />
+          <ShimmerEffect />
+          <View style={{ zIndex: 1, alignItems: 'center' }}>
+            <AnimatedHeadline
+              text="Get in Touch"
+              style={styles.headline}
+            />
+            <Text style={styles.subheadline}>
+              We are here to help! Reach out or browse our support options.
+            </Text>
+          </View>
+        </View>
+
+        {/* --- Support Section --- */}
+        <View style={styles.supportJourneySection}>
+          {/* Restore conditional rendering logic */}
+          <View style={[styles.mainContainer, isMobile && styles.mainContainerMobile]}>
+            <SupportJourney
+              selectedMethod={selectedMethod}
+              onSelectMethod={handleSelectMethod} // Use handler with overlay logic
+              styles={styles}
+            />
+            {/* Only render right column directly if NOT mobile */}
+            {!isMobile && (
+              <ContactFormArea
+                selectedMethod={selectedMethod}
+                styles={styles}
+              />
+            )}
+          </View>
+        </View>
+      </Animated.ScrollView>
+
+      {/* Restore Overlay Rendering */}
+      {isMobile && (
+        <RightPanelOverlay
+          isVisible={isRightPanelVisible}
+          onClose={handleCloseOverlay}
+          selectedMethod={selectedMethod}
+          styles={styles}
+        />
+      )}
+    </Animated.View>
+  );
+};
+
+// --- Combined Styles Function ---
+const getCombinedStyles = (isMobile) => StyleSheet.create({
+  // Original Styles (potentially modified)
+  container: {
+    flex: 1,
+    backgroundColor: COLORS.background,
   },
   scrollView: {
     flex: 1,
+    width: '100%',
   },
   heroSection: {
-    padding: 24,
     alignItems: 'center',
-    backgroundColor: COLORS.white,
+    position: 'relative',
+    overflow: 'hidden',
+    paddingVertical: 80,
+    backgroundColor: COLORS.primary,
+    width: '100%',
   },
   headline: {
     fontSize: Platform.OS === 'web' ? 48 : 36,
     fontWeight: '800',
-    color: COLORS.textDark,
+    color: COLORS.white,
     textAlign: 'center',
     marginBottom: 16,
+    textShadowColor: 'rgba(0, 0, 0, 0.2)',
+    textShadowOffset: { width: 1, height: 1 },
+    textShadowRadius: 3,
+    zIndex: 2, // Ensure headline is above shimmer
   },
   subheadline: {
     fontSize: 18,
-    color: COLORS.textLight,
-    marginBottom: 40,
+    color: '#E0F2F1',
     textAlign: 'center',
-  },
-  section: {
-    padding: 40,
-  },
-  sectionTitle: {
-    fontSize: 32,
-    fontWeight: '700',
-    color: COLORS.textDark,
-    marginBottom: 24,
-    textAlign: 'center',
-  },
-  supportGrid: {
-    flexDirection: Platform.OS === 'web' ? 'row' : 'column',
-    flexWrap: 'wrap',
-    gap: 24,
-    justifyContent: 'center',
-  },
-  supportCard: {
-    backgroundColor: COLORS.white,
-    borderRadius: 12,
-    padding: 24,
-    alignItems: 'center',
-    width: Platform.OS === 'web' ? '30%' : '100%',
-    ...Platform.select({
-      web: {
-        boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)',
-      },
-      default: {
-        elevation: 4,
-      },
-    }),
-  },
-  supportCardTitle: {
-    fontSize: 20,
-    fontWeight: '600',
-    color: COLORS.textDark,
-    marginTop: 16,
-    marginBottom: 8,
-    textAlign: 'center',
-  },
-  supportCardDescription: {
-    fontSize: 16,
-    color: COLORS.textLight,
-    textAlign: 'center',
-    marginBottom: 24,
-  },
-  supportCardButton: {
-    backgroundColor: COLORS.primary,
-    paddingHorizontal: 20,
-    paddingVertical: 12,
-    borderRadius: 8,
-    width: '100%',
-    alignItems: 'center',
-  },
-  supportCardButtonText: {
-    color: COLORS.white,
-    fontSize: 16,
-    fontWeight: '600',
-  },
-  formContainer: {
-    backgroundColor: COLORS.white,
-    borderRadius: 12,
-    padding: 24,
-    width: '100%',
+    marginBottom: 32, // Reduced margin if needed
     maxWidth: 600,
-    marginHorizontal: 'auto',
+    opacity: 0.9,
+    zIndex: 2, // Ensure subheadline is above shimmer
+  },
+  
+  // Styles for the new section container
+  supportJourneySection: {
+     paddingVertical: Platform.OS === 'web' ? 50 : 30,
+     paddingHorizontal: Platform.OS === 'web' ? 20 : 10,
+     alignItems: 'center',
+     width: '100%',
+     marginBottom: 50,
+  },
+
+  // New Styles for the two-column layout (prefixed to avoid conflicts where possible)
+  mainContainer: {
+    flexDirection: 'row',
+    width: '100%',
+    maxWidth: 800, // Max width based on SVG dimensions
+    backgroundColor: 'transparent',
+    gap: 20,
+    alignItems: 'stretch',
+  },
+  mainContainerMobile: {
+    flexDirection: 'column', 
+    maxWidth: 500,
+    gap: 0, // No gap when overlaying
+    alignItems: 'center', // Center the left column
+  },
+  leftColumn: {
+    width: isMobile ? '100%' : undefined,
+    flex: isMobile ? undefined : 1,
+    maxWidth: isMobile ? 400 : 350, 
+    backgroundColor: COLORS.cardBg,
+    borderRadius: 12,
+    paddingVertical: 30,
+    paddingHorizontal: 20,
+    minHeight: 600, 
+    alignItems: 'center',
+    ...Platform.select({
+      web: { boxShadow: '0px 4px 12px rgba(0, 0, 0, 0.1)' },
+      default: { elevation: 5 },
+    }),
+  },
+  journeyTitle: {
+    fontSize: 22,
+    fontWeight: 'bold',
+    color: COLORS.newTextDark,
+    textAlign: 'center',
+    marginBottom: 5,
+  },
+  journeySubtitle: {
+    fontSize: 14,
+    color: COLORS.newTextLight,
+    textAlign: 'center',
+    marginBottom: 40, // Increased space before options
+  },
+  optionsContainer: {
+    marginVertical: 0,
+    gap: 25, // Increased gap for more vertical spacing
+    width: '100%',
+    maxWidth: 300,
+    alignItems: 'center',
+    marginBottom: 40,
+  },
+  optionButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 10,
+    paddingHorizontal: 15,
+    borderRadius: 30,
+    height: 60,
+    width: '100%',
+    overflow: 'hidden',
+    borderWidth: 1, // Add base border width for inactive state
     ...Platform.select({
       web: {
-        boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)',
+        boxShadow: '0 2px 4px rgba(0,0,0,0.05)',
+        transition: 'transform 0.2s ease-out, box-shadow 0.2s ease-out, border-color 0.2s ease-out',
+        cursor: 'pointer',
+        ':hover': {
+          transform: 'translateY(-4px)',
+          boxShadow: '0 6px 12px rgba(0,0,0,0.1)',
+        }
       },
       default: {
-        elevation: 4,
-      },
+        elevation: 2,
+      }
     }),
+  },
+  optionButtonSelected: {
+    backgroundColor: COLORS.primaryLight, // Light Green BG
+    borderColor: COLORS.newPrimary, // Green Border
+    borderWidth: 2, // Keep slightly thicker border for selected
+    ...Platform.select({ web: { boxShadow: '0 4px 8px rgba(0,0,0,0.08)' }, default: { elevation: 4 } })
+  },
+  optionButtonInactive: {
+    backgroundColor: COLORS.inactivePillBg, // Light Blue BG
+    borderColor: COLORS.inactivePillBorder, // Medium Blue Border
+    // Base borderWidth is set in optionButton now
+  },
+  optionIconCircle: { // Base style for the icon circle
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 15,
+  },
+  optionIconCircleSelected: {
+    backgroundColor: COLORS.white, // White background when selected (Green pill)
+  },
+  optionIconCircleInactive: {
+    backgroundColor: COLORS.white, // White background when inactive (Blue pill)
+  },
+  optionTextContainer: {
+    flex: 1,
+    marginRight: 5, 
+  },
+  optionTitle: {
+    fontSize: 14,
+    fontWeight: 'bold',
+    color: COLORS.newTextDark,
+    marginBottom: 2,
+  },
+  optionDescription: {
+    fontSize: 12,
+    color: COLORS.newTextLight,
+  },
+  optionStatusContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    position: 'absolute',
+    right: 15,
+    top: 22,
+  },
+  optionStatusText: {
+    fontSize: 12,
+    color: COLORS.newTextLight, // Default greyish text
+    marginRight: 8,
+  },
+  optionStatusTextSelected: {
+    color: COLORS.newPrimary, // Green text when selected
+    fontWeight: 'bold',
+  },
+  optionStatusDot: {
+    width: 12,
+    height: 12,
+    borderRadius: 6,
+    // backgroundColor is now set dynamically inline based on state
+  },
+  faqContainer: {
+    width: '100%', // Take full width of column
+    maxWidth: 300, // Match options container width
+    marginTop: 'auto', // Push FAQ to the bottom if leftColumn has flex: 1 and sufficient height
+    paddingBottom: 10, // Add some padding at the very bottom
+    alignItems: 'center',
+    paddingHorizontal: 0, // Padding handled by parent
+  },
+  faqTitle: {
+    fontSize: 14,
+    fontWeight: 'bold',
+    color: COLORS.newTextDark,
+    marginBottom: 5,
+  },
+  faqQuestion: {
+    fontSize: 12,
+    color: COLORS.newTextLight,
+    textAlign: 'center',
+  },
+  rightColumn: {
+    flex: 1,
+    maxWidth: 330, 
+    backgroundColor: COLORS.cardBg,
+    borderRadius: 12,
+    minHeight: 600, 
+    overflow: 'hidden',
+    ...Platform.select({
+        web: { boxShadow: !isMobile ? '0px 4px 12px rgba(0, 0, 0, 0.1)' : undefined },
+        default: { elevation: !isMobile ? 5 : undefined },
+      }),
+  },
+  formWrapper: {
+    flex: 1,
+  },
+  formPlaceholder: {
+    textAlign: 'center',
+    marginTop: 50,
+    color: COLORS.newTextLight,
+    fontSize: 16,
+  },
+  formHeader: {
+    height: 80,
+    paddingTop: 20,
+    paddingHorizontal: 20,
+    paddingRight: 45,
+    borderTopLeftRadius: 12,
+    borderTopRightRadius: 12,
+    alignItems: 'center',
+    position: 'relative',
+  },
+  formHeaderTitle: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    color: COLORS.white,
+    marginBottom: 8,
+  },
+  formHeaderSubtitle: {
+    fontSize: 14,
+    color: COLORS.white,
+    textAlign: 'center',
+    opacity: 0.9,
+  },
+  agentPreviewContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 30,
+    paddingVertical: 20,
+  },
+  agentAvatar: {
+    width: 80,
+    height: 80,
+    borderRadius: 40,
+    backgroundColor: COLORS.agentPreviewBg,
+    marginRight: 15,
+    justifyContent: 'center',
+    alignItems: 'center',
+    position: 'relative',
+  },
+  agentFace: {
+    width: 30,
+    height: 20,
+    backgroundColor: COLORS.agentIconBg,
+    borderRadius: 15 / 2,
+    position: 'absolute',
+    top: 25,
+    opacity: 0.7,
+  },
+  agentEye: {
+    position: 'absolute',
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+    backgroundColor: COLORS.newTextDark,
+    top: 30,
+  },
+  agentMouth: {
+    position: 'absolute',
+    width: 14,
+    height: 7,
+    bottom: 30,
+    borderBottomWidth: 2,
+    borderColor: COLORS.newTextDark,
+    borderBottomLeftRadius: 7,
+    borderBottomRightRadius: 7,
+  },
+  agentInfo: {
+    flex: 1,
+  },
+  agentName: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    color: COLORS.newTextDark,
+  },
+  agentTitle: {
+    fontSize: 14,
+    color: COLORS.newTextLight,
+  },
+  agentStatusDot: {
+    width: 10,
+    height: 10,
+    borderRadius: 5,
+    backgroundColor: COLORS.newPrimary,
+    marginLeft: 10,
+  },
+  formFieldsContainer: {
+    paddingHorizontal: 30,
+    paddingTop: 10,
+    paddingBottom: 30,
+  },
+  inputLabel: {
+    fontSize: 14,
+    color: COLORS.newTextLight,
+    marginBottom: 8,
   },
   input: {
     backgroundColor: COLORS.background,
+    borderWidth: 1,
+    borderColor: COLORS.newBorder,
     borderRadius: 8,
-    padding: 16,
-    marginBottom: 16,
-    fontSize: 16,
-    color: COLORS.textDark,
+    height: 45,
+    paddingHorizontal: 15,
+    fontSize: 14,
+    color: COLORS.newTextDark,
+    marginBottom: 20,
+    ...Platform.select({
+        web: {
+            transition: 'border-color 0.3s ease',
+        }
+    }),
   },
-  messageInput: {
-    height: 120,
-    textAlignVertical: 'top',
+  inputFocused: {
+    borderColor: COLORS.newPrimary,
+    borderWidth: 1.5,
+     ...Platform.select({
+        web: {
+             boxShadow: `0 0 0 2px ${COLORS.primaryLight}`
+        }
+    }),
   },
-  submitButton: {
-    backgroundColor: COLORS.primary,
-    paddingHorizontal: 20,
-    paddingVertical: 16,
+  submitChatButton: {
+    backgroundColor: COLORS.newPrimary,
     borderRadius: 8,
+    paddingVertical: 15,
     alignItems: 'center',
+    marginTop: 10,
   },
-  submitButtonText: {
+  submitChatButtonText: {
     color: COLORS.white,
     fontSize: 16,
-    fontWeight: '600',
+    fontWeight: 'bold',
   },
-  faqContainer: {
-    maxWidth: 800,
-    marginHorizontal: 'auto',
+  formFieldsScrollView: {
+      flex: 1,
+  },
+  messageInput: {
+    height: 120, 
+    textAlignVertical: 'top',
+  },
+  submitEmailButton: {
+    backgroundColor: COLORS.newPrimary,
+    borderRadius: 8,
+    paddingVertical: 15,
+    alignItems: 'center',
+    marginTop: 10,
+  },
+  submitEmailButtonText: {
+    color: COLORS.white,
+    fontSize: 16,
+    fontWeight: 'bold',
+  },
+  phoneInfoContainer: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: 30,
+  },
+  phoneInfoHeader: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: COLORS.newTextDark,
+    marginBottom: 8,
+    textAlign: 'center',
+  },
+  phoneInfoText: {
+    fontSize: 16,
+    color: COLORS.newTextLight,
+    marginBottom: 4,
+    textAlign: 'center',
+  },
+  phoneNumberText: {
+     fontSize: 20,
+     fontWeight: 'bold',
+     color: COLORS.newPrimary,
+     marginBottom: 30,
+     textAlign: 'center',
+  },
+  callNowButton: {
+    flexDirection: 'row',
+    backgroundColor: COLORS.newPrimary,
+    borderRadius: 8,
+    paddingVertical: 15,
+    paddingHorizontal: 30,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginTop: 20,
+  },
+  callNowButtonText: {
+    color: COLORS.white,
+    fontSize: 16,
+    fontWeight: 'bold',
+  },
+  scrollContentContainer: {
+    flexGrow: 1,
+    alignItems: 'center',
     width: '100%',
   },
-  faqItem: {
-    marginBottom: 16,
-  },
-  faqQuestion: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    backgroundColor: COLORS.white,
-    padding: 16,
-    borderRadius: 8,
-    ...Platform.select({
-      web: {
-        boxShadow: '0 2px 4px -1px rgba(0, 0, 0, 0.1)',
-      },
-      default: {
-        elevation: 2,
-      },
-    }),
-  },
-  faqQuestionText: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: COLORS.textDark,
-    flex: 1,
-    marginRight: 16,
-  },
-  faqAnswer: {
-    backgroundColor: COLORS.backgroundAlt,
-    padding: 16,
-    borderBottomLeftRadius: 8,
-    borderBottomRightRadius: 8,
-    overflow: 'hidden',
-  },
-  faqAnswerText: {
-    fontSize: 16,
-    color: COLORS.textLight,
-  },
-  footer: {
-    backgroundColor: COLORS.background,
-    padding: 40,
-  },
-  footerContent: {
-    flexDirection: Platform.OS === 'web' ? 'row' : 'column',
-    justifyContent: 'space-between',
-    gap: 40,
-  },
-  footerSection: {
-    flex: 1,
-  },
-  footerTitle: {
-    fontSize: 18,
-    fontWeight: '700',
-    color: COLORS.textDark,
-    marginBottom: 24,
-  },
-  footerLink: {
-    fontSize: 16,
-    color: COLORS.textLight,
-    marginBottom: 16,
-  },
-  socialLinks: {
-    flexDirection: 'row',
-    gap: 16,
-  },
-  socialIcon: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: COLORS.white,
+  overlayContainer: {
+    ...StyleSheet.absoluteFillObject,
     justifyContent: 'center',
     alignItems: 'center',
-    ...Platform.select({
-      web: {
-        boxShadow: '0 2px 4px -1px rgba(0, 0, 0, 0.1)',
-      },
-      default: {
-        elevation: 2,
-      },
+    zIndex: 1000,
+    padding: 20, 
+  },
+  overlayBackdrop: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: 'rgba(0, 0, 0, 0.6)',
+  },
+  overlayContentContainer: {
+    width: '100%', 
+    maxWidth: 400, // Match mobile left column max width
+    maxHeight: '85%',
+    backgroundColor: COLORS.cardBg,
+    borderRadius: 12,
+    overflow: 'hidden',
+    position: 'relative',
+     ...Platform.select({
+        web: { boxShadow: '0 10px 30px rgba(0,0,0,0.2)' },
+        default: { elevation: 20 }
     }),
   },
-  copyright: {
-    fontSize: 14,
-    color: COLORS.textLight,
-    textAlign: 'center',
-    marginTop: 40,
+  overlayCloseButton: {
+    position: 'absolute',
+    top: 8,
+    right: 8,
+    padding: 6, 
+    borderRadius: 20, 
+    zIndex: 10, 
   },
 });
 

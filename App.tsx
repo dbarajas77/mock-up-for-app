@@ -12,9 +12,18 @@ import { ProjectProvider } from './src/contexts/ProjectContext';
 import RootNavigator from './src/navigation/RootNavigator';
 import ErrorBoundary from './src/components/ErrorBoundary';
 
+// Import our polyfill early
+import './src/utils/touchablePolyfill';
+
 export default function App() {
   useEffect(() => {
     console.log('App: Initial render');
+    
+    // Handle any potential touchable property errors at runtime
+    if (typeof window !== 'undefined' && window.__WEBPACK_IMPORTED_MODULE_1__hasTouchableProperty === undefined) {
+      // This is a fallback for the case where our polyfill wasn't loaded early enough
+      window.__WEBPACK_IMPORTED_MODULE_1__hasTouchableProperty = () => true;
+    }
   }, []);
   
   return (

@@ -144,7 +144,7 @@ const CustomDrawerContent = ({ navigation, state }: DrawerContentComponentProps)
       {/* Logout Button */}
       <TouchableOpacity 
         style={styles.logoutButton}
-        onPress={signOut}
+        onPress={() => signOut(navigation)}
         className="sidebar-footer sidebar-nav-item"
       >
         <Ionicons name="log-out-outline" size={20} color="#ef4444" className="icon" />

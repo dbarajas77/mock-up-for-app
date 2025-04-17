@@ -2,6 +2,7 @@ import React, { createContext, useState, useEffect, useContext, ReactNode } from
 import { supabase, ensureConnection } from '../lib/supabase';
 import { Session, User as SupabaseUser } from '@supabase/supabase-js';
 import { View, ActivityIndicator } from 'react-native';
+import { NavigationProp, ParamListBase } from '@react-navigation/native';
 
 interface AuthState {
   session: Session | null;
@@ -10,7 +11,7 @@ interface AuthState {
 
 interface AuthContextType extends AuthState {
   loading: boolean;
-  signOut: () => Promise<void>;
+  signOut: (navigation?: NavigationProp<ParamListBase>) => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType>({
@@ -87,13 +88,21 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
     };
   }, []);
 
-  const signOut = async () => {
+  const signOut = async (navigation?: NavigationProp<ParamListBase>) => {
     try {
       await supabase.auth.signOut();
       setState({
         session: null,
         user: null
       });
+      
+      // Navigate to Landing page after logout if navigation is provided
+      if (navigation) {
+        navigation.reset({
+          index: 0,
+          routes: [{ name: 'Landing' }],
+        });
+      }
     } catch (error) {
       console.error('Error signing out:', error);
     }

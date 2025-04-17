@@ -9,6 +9,8 @@ import {
   ScrollView,
   TextInput,
   FlatList,
+  StyleSheet as CoreStyleSheet,
+  Animated as CoreAnimated,
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
@@ -23,6 +25,8 @@ import Animated, {
   Extrapolate,
   useAnimatedScrollHandler,
 } from 'react-native-reanimated';
+import { LinearGradient } from 'expo-linear-gradient';
+import Header from '../../components/LandingPage/Header';
 
 const COLORS = {
   primary: '#10B981',
@@ -116,6 +120,177 @@ const TutorialCard = ({ title, duration, difficulty, thumbnail, onPress }) => {
   );
 };
 
+// <<< START COPIED ShimmerEffect CODE >>>
+const shimmerStyles = CoreStyleSheet.create({
+  shimmerContainer: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    zIndex: 1,
+    overflow: 'hidden',
+  },
+  raindropShimmer: {
+    position: 'absolute',
+    width: 4,
+    height: 70,
+    top: 0,
+    bottom: 0,
+  },
+  raindropGradient: {
+    width: '100%',
+    height: '100%',
+    borderRadius: 2,
+  },
+  raindropSplash: {
+    position: 'absolute',
+    width: 10,
+    height: 10,
+    borderRadius: 5,
+    zIndex: 2,
+  },
+  splashGradient: {
+    width: '100%',
+    height: '100%',
+    borderRadius: 5,
+  },
+});
+
+const ShimmerEffect = () => {
+  const [raindrops, setRaindrops] = useState([]);
+  const screenHeight = useWindowDimensions().height;
+
+  const createRaindrops = () => {
+    const drops = [];
+    const numDrops = 30;
+    for (let i = 0; i < numDrops; i++) {
+      drops.push({
+        id: i,
+        horizontalOffset: Math.random() * 100,
+        height: Math.random() * 50 + 40,
+        width: Math.random() * 2 + 2,
+        position: new CoreAnimated.Value(- (Math.random() * screenHeight * 0.5 + 50)),
+        splash: new CoreAnimated.Value(0),
+        splashOpacity: new CoreAnimated.Value(0),
+        delay: Math.random() * 5000,
+        duration: Math.random() * 1500 + 1000,
+        landingPoint: screenHeight * (Math.random() * 0.3 + 0.6),
+      });
+    }
+    setRaindrops(drops);
+    return drops;
+  };
+
+  React.useEffect(() => {
+    const drops = createRaindrops();
+
+    const startRainAnimation = (drop) => {
+      const animateRaindrop = () => {
+        drop.position.setValue(-drop.height);
+        drop.splash.setValue(0);
+        drop.splashOpacity.setValue(0);
+
+        CoreAnimated.sequence([
+          CoreAnimated.delay(drop.delay),
+          CoreAnimated.timing(drop.position, {
+            toValue: drop.landingPoint,
+            duration: drop.duration,
+            useNativeDriver: true,
+          }),
+          CoreAnimated.parallel([
+            CoreAnimated.timing(drop.splash, {
+              toValue: 1,
+              duration: 400,
+              useNativeDriver: true,
+            }),
+            CoreAnimated.timing(drop.splashOpacity, {
+              toValue: 1,
+              duration: 100,
+              useNativeDriver: true,
+            }),
+          ]),
+          CoreAnimated.timing(drop.splashOpacity, {
+            toValue: 0,
+            duration: 300,
+            delay: 100,
+            useNativeDriver: true,
+          }),
+        ]).start(() => {
+          drop.delay = Math.random() * 3000 + 1000;
+          drop.duration = Math.random() * 1500 + 1000;
+          animateRaindrop();
+        });
+      };
+      animateRaindrop();
+    };
+
+    drops.forEach(drop => startRainAnimation(drop));
+
+    return () => {
+      raindrops.forEach(drop => {
+        if (drop.position) drop.position.stopAnimation();
+        if (drop.splash) drop.splash.stopAnimation();
+        if (drop.splashOpacity) drop.splashOpacity.stopAnimation();
+      });
+    };
+  }, []);
+
+  return (
+    <View style={shimmerStyles.shimmerContainer} pointerEvents="none">
+      {raindrops.map((drop) => (
+        <React.Fragment key={drop.id}>
+          <CoreAnimated.View
+            style={[
+              shimmerStyles.raindropShimmer,
+              {
+                left: `${drop.horizontalOffset}%`,
+                height: drop.height,
+                width: drop.width,
+                transform: [{ translateY: drop.position }],
+              },
+            ]}
+          >
+            <LinearGradient
+              colors={['rgba(255,255,255,0)', 'rgba(255,255,255,0.2)', 'rgba(255,255,255,0.4)', 'rgba(255,255,255,0.2)', 'rgba(255,255,255,0)']}
+              start={{ x: 0.5, y: 0 }}
+              end={{ x: 0.5, y: 1 }}
+              style={shimmerStyles.raindropGradient}
+            />
+          </CoreAnimated.View>
+
+          <CoreAnimated.View
+            style={[
+              shimmerStyles.raindropSplash,
+              {
+                left: `${drop.horizontalOffset}%`,
+                top: drop.landingPoint,
+                opacity: drop.splashOpacity,
+                transform: [
+                  {
+                    scale: drop.splash.interpolate({
+                      inputRange: [0, 1],
+                      outputRange: [0.5, 2.5],
+                    }),
+                  },
+                ],
+              },
+            ]}
+          >
+             <LinearGradient
+              colors={['rgba(255,255,255,0.4)', 'rgba(255,255,255,0.1)', 'rgba(255,255,255,0)']}
+              style={shimmerStyles.splashGradient}
+              start={{ x: 0.5, y: 0.5 }}
+              end={{ x: 1, y: 1 }}
+            />
+          </CoreAnimated.View>
+        </React.Fragment>
+      ))}
+    </View>
+  );
+};
+// <<< END COPIED ShimmerEffect CODE >>>
+
 const ResourcesScreen = () => {
   const navigation = useNavigation<NavigationProp>();
   const { width } = useWindowDimensions();
@@ -126,18 +301,6 @@ const ResourcesScreen = () => {
     onScroll: (event) => {
       scrollY.value = event.contentOffset.y;
     },
-  });
-
-  const headerStyle = useAnimatedStyle(() => {
-    return {
-      opacity: interpolate(
-        scrollY.value,
-        [0, 100],
-        [1, 0.9],
-        Extrapolate.CLAMP
-      ),
-      backgroundColor: COLORS.white,
-    };
   });
 
   const documentationSections = [
@@ -186,46 +349,7 @@ const ResourcesScreen = () => {
 
   return (
     <View style={styles.container}>
-      {/* Header */}
-      <Animated.View style={[styles.header, headerStyle]}>
-        <View style={[styles.headerContent, { paddingTop: insets.top }]}>
-          <TouchableOpacity onPress={() => navigation.navigate('Landing')}>
-            <Text style={styles.logoText}>SiteSnap</Text>
-          </TouchableOpacity>
-          
-          {width > 768 && (
-            <View style={styles.navLinks}>
-              <TouchableOpacity onPress={() => navigation.navigate('Landing')}>
-                <Text style={styles.navLink}>Home</Text>
-              </TouchableOpacity>
-              <TouchableOpacity onPress={() => navigation.navigate('Features')}>
-                <Text style={styles.navLink}>Features</Text>
-              </TouchableOpacity>
-              <TouchableOpacity onPress={() => navigation.navigate('Pricing')}>
-                <Text style={styles.navLink}>Pricing</Text>
-              </TouchableOpacity>
-              <TouchableOpacity onPress={() => navigation.navigate('Resources')}>
-                <Text style={[styles.navLink, styles.activeNavLink]}>Resources</Text>
-              </TouchableOpacity>
-              <TouchableOpacity onPress={() => navigation.navigate('Support')}>
-                <Text style={styles.navLink}>Support</Text>
-              </TouchableOpacity>
-            </View>
-          )}
-
-          <View style={styles.authButtons}>
-            <TouchableOpacity onPress={() => navigation.navigate('Auth', { screen: 'Login' })}>
-              <Text style={styles.loginButton}>Login</Text>
-            </TouchableOpacity>
-            <TouchableOpacity 
-              style={styles.signupButton}
-              onPress={() => navigation.navigate('Auth', { screen: 'SignUp' })}
-            >
-              <Text style={styles.signupButtonText}>Sign Up</Text>
-            </TouchableOpacity>
-          </View>
-        </View>
-      </Animated.View>
+      <Header />
 
       <AnimatedScrollView
         style={styles.scrollView}
@@ -233,14 +357,22 @@ const ResourcesScreen = () => {
         scrollEventThrottle={16}
         showsVerticalScrollIndicator={false}
       >
-        {/* Hero Section */}
-        <View style={[styles.heroSection, { paddingTop: 100 + insets.top }]}>
-          <Text style={styles.headline}>Resources & Documentation</Text>
-          <Text style={styles.subheadline}>Everything you need to succeed with SiteSnap</Text>
-          <SearchBar onSearch={(query) => console.log('Search:', query)} />
+        <View style={styles.heroSection}>
+          <LinearGradient
+            colors={[COLORS.primary, COLORS.primaryDark, '#E0F2F1']}
+            start={{ x: 0.5, y: 0 }}
+            end={{ x: 0.5, y: 1 }}
+            style={CoreStyleSheet.absoluteFill}
+          />
+          <ShimmerEffect />
+
+          <View style={{ zIndex: 1, alignItems: 'center' }}>
+            <Text style={styles.headline}>Resources & Documentation</Text>
+            <Text style={styles.subheadline}>Everything you need to succeed with SiteSnap</Text>
+            <SearchBar onSearch={(query) => console.log('Search:', query)} />
+          </View>
         </View>
 
-        {/* Documentation Section */}
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Documentation</Text>
           <View style={styles.documentationGrid}>
@@ -256,7 +388,6 @@ const ResourcesScreen = () => {
           </View>
         </View>
 
-        {/* Tutorials Section */}
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Video Tutorials</Text>
           <ScrollView
@@ -274,7 +405,6 @@ const ResourcesScreen = () => {
           </ScrollView>
         </View>
 
-        {/* Developer Resources */}
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Developer Resources</Text>
           <View style={styles.developerGrid}>
@@ -293,7 +423,6 @@ const ResourcesScreen = () => {
           </View>
         </View>
 
-        {/* Community Section */}
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Community</Text>
           <View style={styles.communityGrid}>
@@ -321,7 +450,6 @@ const ResourcesScreen = () => {
           </View>
         </View>
 
-        {/* Footer */}
         <View style={styles.footer}>
           <View style={styles.footerContent}>
             <View style={styles.footerSection}>
@@ -358,81 +486,32 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: COLORS.background,
   },
-  header: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    zIndex: 1000,
-    backgroundColor: COLORS.white,
-    borderBottomWidth: 1,
-    borderBottomColor: 'rgba(229, 231, 235, 0.5)',
-  },
-  headerContent: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: 20,
-    paddingVertical: 16,
-  },
-  logoText: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    color: COLORS.primary,
-  },
-  navLinks: {
-    flexDirection: 'row',
-    gap: 32,
-  },
-  navLink: {
-    fontSize: 16,
-    color: COLORS.textDark,
-    fontWeight: '500',
-  },
-  activeNavLink: {
-    color: COLORS.primary,
-  },
-  authButtons: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 16,
-  },
-  loginButton: {
-    fontSize: 16,
-    color: COLORS.textDark,
-    fontWeight: '500',
-  },
-  signupButton: {
-    backgroundColor: COLORS.primary,
-    paddingHorizontal: 20,
-    paddingVertical: 12,
-    borderRadius: 8,
-  },
-  signupButtonText: {
-    color: COLORS.white,
-    fontSize: 16,
-    fontWeight: '600',
-  },
   scrollView: {
     flex: 1,
   },
   heroSection: {
-    padding: 24,
     alignItems: 'center',
-    backgroundColor: COLORS.white,
+    position: 'relative',
+    overflow: 'hidden',
+    paddingVertical: 80,
   },
   headline: {
     fontSize: Platform.OS === 'web' ? 48 : 36,
     fontWeight: '800',
-    color: COLORS.textDark,
+    color: '#FFFFFF',
     textAlign: 'center',
     marginBottom: 16,
+    textShadowColor: 'rgba(0, 0, 0, 0.2)',
+    textShadowOffset: { width: 1, height: 1 },
+    textShadowRadius: 3,
   },
   subheadline: {
     fontSize: 18,
-    color: COLORS.textLight,
-    marginBottom: 40,
+    color: '#E0F2F1',
     textAlign: 'center',
+    marginBottom: 32,
+    maxWidth: 600,
+    opacity: 0.9,
   },
   searchContainer: {
     flexDirection: 'row',

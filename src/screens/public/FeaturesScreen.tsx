@@ -7,13 +7,18 @@ import {
   Image,
   Platform,
   useWindowDimensions,
-  TouchableOpacity
+  TouchableOpacity,
+  ImageBackground,
+  Animated,
+  ImageSourcePropType
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../../navigation/types';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { MaterialIcons, FontAwesome5 } from '@expo/vector-icons';
+import { useInView } from 'react-intersection-observer';
+import { LinearGradient } from 'expo-linear-gradient';
 import Header from '../../components/LandingPage/Header';
 import Footer from '../../components/LandingPage/Footer';
 import FinalCTASection from '../../components/LandingPage/FinalCTASection';
@@ -26,22 +31,51 @@ const COLORS = {
   textLight: '#6B7280',
   textGray: '#333333',
   white: '#FFFFFF',
-  background: '#F9FAFB',
+  background: '#F3F4F6', // Lighter gray background color (changed from #EAEDF0)
   backgroundAlt: '#FFFFFF',
   tagBackground: '#E6F7F2',
+  heroBackground: '#F0FDF9',
 };
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
 
-// Category Tag component
-const CategoryTag = ({ text }) => (
+// Category Tag Component with type annotation
+const CategoryTag = ({ text }: { text: string }) => (
   <View style={styles.categoryTag}>
     <Text style={styles.categoryTagText}>{text}</Text>
   </View>
 );
 
+// Consistent shadow style to use throughout the features page
+const CARD_SHADOW = Platform.select({
+  ios: {
+    shadowColor: '#000',
+    shadowOffset: { width: 6, height: 8 },
+    shadowOpacity: 0.2,
+    shadowRadius: 10,
+  },
+  android: {
+    elevation: 10,
+  },
+  web: {
+    boxShadow: '6px 8px 15px rgba(0, 0, 0, 0.1)',
+  }
+});
+
+// Define props type for FeatureSection
+interface FeatureSectionProps {
+  categoryTitle?: string;
+  title: string;
+  description?: string;
+  bullets?: string[];
+  image: ImageSourcePropType;
+  imageOnRight?: boolean;
+  backgroundColor?: string;
+  componentPath?: string;
+}
+
 // Feature section component with image and content side by side (or stacked on mobile)
-const FeatureSection = (props) => {
+const FeatureSection = (props: FeatureSectionProps) => {
   const { 
     categoryTitle, 
     title, 
@@ -55,9 +89,38 @@ const FeatureSection = (props) => {
   
   const { width } = useWindowDimensions();
   const isDesktop = width >= 768;
+  const fadeAnim = React.useRef(new Animated.Value(0)).current;
+  
+  // Using react-intersection-observer to detect when component is visible
+  const { ref, inView } = useInView({
+    threshold: 0.2,
+    triggerOnce: true,
+  });
+  
+  React.useEffect(() => {
+    if (inView) {
+      Animated.timing(fadeAnim, {
+        toValue: 1,
+        duration: 1200,
+        delay: 200,
+        useNativeDriver: true,
+      }).start();
+    }
+  }, [inView]);
 
   return (
-    <View style={[styles.featureSection, { backgroundColor }]}>
+    <Animated.View 
+      ref={ref}
+      style={[
+        styles.featureSection, 
+        { backgroundColor },
+        { opacity: fadeAnim, transform: [{ translateY: fadeAnim.interpolate({
+          inputRange: [0, 1],
+          outputRange: [50, 0]
+        })}] },
+        CARD_SHADOW
+      ]}
+    >
       <View style={styles.featureSectionInner}>
         {/* For desktop layout */}
         {isDesktop ? (
@@ -70,14 +133,16 @@ const FeatureSection = (props) => {
               {description && (
                 <Text style={styles.featureDescription}>{description}</Text>
               )}
-              <View style={styles.featureBullets}>
-                {bullets.map((bullet, index) => (
-                  <View key={index} style={styles.bulletItem}>
-                    <MaterialIcons name="check-circle" size={20} color={COLORS.primary} style={styles.bulletIcon} />
-                    <Text style={styles.bulletText}>{bullet}</Text>
-                  </View>
-                ))}
-              </View>
+              {bullets && bullets.length > 0 && (
+                <View style={styles.featureBullets}>
+                  {bullets.map((bullet: string, index: number) => (
+                    <View key={index} style={styles.bulletItem}>
+                      <MaterialIcons name="check-circle" size={20} color={COLORS.primary} style={styles.bulletIcon} />
+                      <Text style={styles.bulletText}>{bullet}</Text>
+                    </View>
+                  ))}
+                </View>
+              )}
               {componentPath && (
                 <Text style={styles.componentPath}>{componentPath}</Text>
               )}
@@ -108,14 +173,16 @@ const FeatureSection = (props) => {
               {description && (
                 <Text style={styles.featureDescription}>{description}</Text>
               )}
-              <View style={styles.featureBullets}>
-                {bullets.map((bullet, index) => (
-                  <View key={index} style={styles.bulletItem}>
-                    <MaterialIcons name="check-circle" size={20} color={COLORS.primary} style={styles.bulletIcon} />
-                    <Text style={styles.bulletText}>{bullet}</Text>
-                  </View>
-                ))}
-              </View>
+              {bullets && bullets.length > 0 && (
+                <View style={styles.featureBullets}>
+                  {bullets.map((bullet: string, index: number) => (
+                    <View key={index} style={styles.bulletItem}>
+                      <MaterialIcons name="check-circle" size={20} color={COLORS.primary} style={styles.bulletIcon} />
+                      <Text style={styles.bulletText}>{bullet}</Text>
+                    </View>
+                  ))}
+                </View>
+              )}
               {componentPath && (
                 <Text style={styles.componentPath}>{componentPath}</Text>
               )}
@@ -123,25 +190,295 @@ const FeatureSection = (props) => {
           </View>
         )}
       </View>
-    </View>
+    </Animated.View>
   );
 };
 
-// Feature category header with category tag
-const FeatureCategoryHeader = ({ title, tagText, description }) => (
-  <View style={styles.categoryHeader}>
-    <CategoryTag text={tagText} />
-    <Text style={styles.categoryHeaderTitle}>{title}</Text>
-    <Text style={styles.categoryHeaderDescription}>{description}</Text>
-  </View>
-);
+// Define props type for FeatureCategoryHeader
+interface FeatureCategoryHeaderProps {
+  title: string;
+  tagText: string;
+  description: string;
+}
 
-// Simple integration icon component
-const IntegrationIcon = ({ icon, name }) => {
+// Feature category header with category tag
+const FeatureCategoryHeader = ({ title, tagText, description }: FeatureCategoryHeaderProps) => {
+  const fadeAnim = React.useRef(new Animated.Value(0)).current;
+  
+  // Using react-intersection-observer to detect when component is visible
+  const { ref, inView } = useInView({
+    threshold: 0.2,
+    triggerOnce: true,
+  });
+  
+  React.useEffect(() => {
+    if (inView) {
+      Animated.timing(fadeAnim, {
+        toValue: 1,
+        duration: 1200,
+        delay: 200,
+        useNativeDriver: true,
+      }).start();
+    }
+  }, [inView]);
+
   return (
-    <View style={styles.integrationIcon}>
+    <Animated.View 
+      ref={ref}
+      style={[
+        styles.categoryHeader,
+        { opacity: fadeAnim, transform: [{ translateY: fadeAnim.interpolate({
+          inputRange: [0, 1],
+          outputRange: [50, 0]
+        })}] }
+      ]}
+    >
+      <CategoryTag text={tagText} />
+      <Text style={styles.categoryHeaderTitle}>{title}</Text>
+      <Text style={styles.categoryHeaderDescription}>{description}</Text>
+    </Animated.View>
+  );
+};
+
+// Define props type for IntegrationIcon
+interface IntegrationIconProps {
+  icon: React.ComponentProps<typeof FontAwesome5>['name']; // Infer type from FontAwesome5
+  name: string;
+}
+
+// Integration icon component
+const IntegrationIcon = ({ icon, name }: IntegrationIconProps) => {
+  const fadeAnim = React.useRef(new Animated.Value(0)).current;
+  
+  // Using react-intersection-observer to detect when component is visible
+  const { ref, inView } = useInView({
+    threshold: 0.2,
+    triggerOnce: true,
+  });
+  
+  React.useEffect(() => {
+    if (inView) {
+      Animated.timing(fadeAnim, {
+        toValue: 1,
+        duration: 1200,
+        delay: 300,
+        useNativeDriver: true,
+      }).start();
+    }
+  }, [inView]);
+
+  return (
+    <Animated.View 
+      ref={ref}
+      style={[
+        styles.integrationIcon,
+        { opacity: fadeAnim, transform: [{ scale: fadeAnim.interpolate({
+          inputRange: [0, 1],
+          outputRange: [0.5, 1]
+        })}] }
+      ]}
+    >
       <FontAwesome5 name={icon} size={64} color={COLORS.primary} />
       <Text style={styles.integrationName}>{name}</Text>
+    </Animated.View>
+  );
+};
+
+// Define props type for HeroFeatureCard
+interface HeroFeatureCardProps {
+  icon: React.ComponentProps<typeof MaterialIcons>['name']; // Infer type from MaterialIcons
+  title: string;
+  description: string;
+}
+
+// Hero feature card component
+const HeroFeatureCard = ({ icon, title, description }: HeroFeatureCardProps) => {
+  const fadeAnim = React.useRef(new Animated.Value(0)).current;
+  
+  // Using react-intersection-observer to detect when component is visible
+  const { ref, inView } = useInView({
+    threshold: 0.2,
+    triggerOnce: true,
+  });
+  
+  React.useEffect(() => {
+    if (inView) {
+      Animated.timing(fadeAnim, {
+        toValue: 1,
+        duration: 1200,
+        delay: 200,
+        useNativeDriver: true,
+      }).start();
+    }
+  }, [inView]);
+
+  return (
+    <Animated.View 
+      ref={ref}
+      style={[
+        styles.heroFeatureCard,
+        { opacity: fadeAnim, transform: [{ translateY: fadeAnim.interpolate({
+          inputRange: [0, 1],
+          outputRange: [50, 0]
+        })}] }
+      ]}
+    >
+      <View style={styles.heroFeatureIconContainer}>
+        <MaterialIcons name={icon} size={32} color={COLORS.primary} />
+      </View>
+      <Text style={styles.heroFeatureTitle}>{title}</Text>
+      <Text style={styles.heroFeatureDescription}>{description}</Text>
+    </Animated.View>
+  );
+};
+
+// Shimmer Effect Component
+const ShimmerEffect = () => {
+  // Create evenly distributed positions with slight randomness
+  const createRaindrops = () => {
+    const drops = [];
+    const count = 24;
+    
+    // Create evenly spaced segments across the full width (0-100%)
+    for (let i = 0; i < count; i++) {
+      // Calculate base position (0-100%)
+      const basePosition = (i / count) * 100;
+      // Add small randomness within the segment (±2%)
+      const randomOffset = Math.random() * 4 - 2;
+      
+      drops.push({
+        position: React.useRef(new Animated.Value(-200)).current,
+        horizontalOffset: Math.max(0, Math.min(100, basePosition + randomOffset)), // Keep between 0-100%
+        height: Math.random() * 70 + 40, // 40-110px drop height
+        width: Math.random() * 2 + 2, // 2-4px width
+        speed: Math.random() * 4000 + 3000, // 3-7 seconds duration
+        splash: React.useRef(new Animated.Value(0)).current,
+        splashOpacity: React.useRef(new Animated.Value(0)).current,
+        // Random point where the raindrop will stop/"hit ground"
+        landingPoint: Math.random() * 500 + 200 // 200-700px from top
+      });
+    }
+    
+    return drops;
+  };
+  
+  // More raindrops for heavier rain, evenly distributed
+  const raindrops = createRaindrops();
+  
+  React.useEffect(() => {
+    const startRainAnimation = () => {
+      raindrops.forEach(drop => {
+        // Create raindrop falling animation
+        const animateRaindrop = () => {
+          // Reset splash animations
+          drop.splash.setValue(0);
+          drop.splashOpacity.setValue(0);
+          
+          // Animate raindrop falling
+          Animated.timing(drop.position, {
+            toValue: drop.landingPoint,
+            duration: drop.speed,
+            useNativeDriver: true,
+          }).start(() => {
+            // Create splash effect when drop lands
+            Animated.parallel([
+              // Expand splash
+              Animated.timing(drop.splash, {
+                toValue: 1,
+                duration: 700,
+                useNativeDriver: true,
+              }),
+              // Fade out splash
+              Animated.sequence([
+                Animated.timing(drop.splashOpacity, {
+                  toValue: 0.7,
+                  duration: 100,
+                  useNativeDriver: true,
+                }),
+                Animated.timing(drop.splashOpacity, {
+                  toValue: 0,
+                  duration: 600,
+                  useNativeDriver: true,
+                })
+              ])
+            ]).start(() => {
+              // Reset raindrop to top with slight randomness
+              drop.position.setValue(-200 - Math.random() * 300);
+              // Slightly vary landing position for next iteration
+              drop.landingPoint = Math.random() * 500 + 200;
+              // Restart animation
+              setTimeout(animateRaindrop, Math.random() * 500);
+            });
+          });
+        };
+        
+        // Start with random delay for each drop
+        setTimeout(animateRaindrop, Math.random() * 3000);
+      });
+    };
+    
+    startRainAnimation();
+    
+    return () => {
+      // Clean up animations
+      raindrops.forEach(drop => {
+        drop.position.stopAnimation();
+        drop.splash.stopAnimation();
+        drop.splashOpacity.stopAnimation();
+      });
+    };
+  }, []);
+
+  return (
+    <View style={styles.shimmerContainer}>
+      {raindrops.map((drop, index) => (
+        <React.Fragment key={index}>
+          {/* Raindrop */}
+          <Animated.View 
+            style={[
+              styles.raindropShimmer,
+              { 
+                left: `${drop.horizontalOffset}%`,
+                height: drop.height,
+                width: drop.width,
+                transform: [{ translateY: drop.position }] 
+              }
+            ]}
+          >
+            <LinearGradient
+              colors={['rgba(255,255,255,0)', 'rgba(255,255,255,0.2)', 'rgba(255,255,255,0.4)', 'rgba(255,255,255,0.2)', 'rgba(255,255,255,0)']}
+              start={{ x: 0.5, y: 0 }}
+              end={{ x: 0.5, y: 1 }}
+              style={styles.raindropGradient}
+            />
+          </Animated.View>
+          
+          {/* Splash effect */}
+          <Animated.View
+            style={[
+              styles.raindropSplash,
+              {
+                left: `${drop.horizontalOffset}%`,
+                top: drop.landingPoint,
+                opacity: drop.splashOpacity,
+                transform: [
+                  { scale: drop.splash.interpolate({
+                    inputRange: [0, 1],
+                    outputRange: [0.5, 2.5]
+                  })},
+                ]
+              }
+            ]}
+          >
+            <LinearGradient
+              colors={['rgba(255,255,255,0.4)', 'rgba(255,255,255,0.1)', 'rgba(255,255,255,0)']}
+              style={styles.splashGradient}
+              start={{ x: 0.5, y: 0.5 }}
+              end={{ x: 1, y: 1 }}
+            />
+          </Animated.View>
+        </React.Fragment>
+      ))}
     </View>
   );
 };
@@ -154,7 +491,18 @@ const FeaturesScreen = () => {
   
   // Mock images - use placeholder for now
   const placeholderImage = require('../../assets/images/dashboard-preview.png');
+  // Logo image - use the actual logo
+  const logoImage = require('../../assets/images/logo.png');
   
+  // Handle construction image - use gradient fallback if image is missing
+  // let constructionBgImage;
+  // try {
+  //   constructionBgImage = require('../../assets/images/construction-site.jpg');
+  // } catch (error) {
+  //   console.log('Construction site image not found, using gradient fallback');
+  //   constructionBgImage = null;
+  // }
+
   return (
     <View style={styles.container}>
       {/* 1. Header */}
@@ -164,31 +512,52 @@ const FeaturesScreen = () => {
         style={styles.scrollView}
         contentContainerStyle={{ paddingTop: headerHeight }}
       >
-        {/* 2. Introduction Section */}
-        <View style={styles.introSection}>
-          <Text style={styles.headline}>
-            Transform Your Project Management with Powerful Tools
-          </Text>
-          
-          <Text style={styles.overviewText}>
-            Streamline project management, automate reporting, and enhance team collaboration 
-            with our comprehensive suite of tools designed for construction teams, field service operators, and inspection agencies.
-          </Text>
+        {/* 2. Hero Section with Gradient Background */}
+        <View style={styles.heroSection}>
+          {/* Always use the LinearGradient fallback */}
+          <LinearGradient
+            colors={[COLORS.primary, COLORS.primaryDark, COLORS.background]} // Use fallback colors
+            start={{ x: 0.5, y: 0 }}
+            end={{ x: 0.5, y: 1 }}
+            style={styles.heroBackground} // Use the heroBackground style
+          >
+            <View style={styles.heroContent}>
+              <ShimmerEffect />
+              {/* SiteSnap Logo */}
+              <View style={styles.logoContainer}>
+                <Image 
+                  source={logoImage}
+                  style={styles.featureLogo}
+                  resizeMode="contain"
+                />
+              </View>
+              
+              <Text style={[styles.heroTagline, styles.heroTextColor]}>Everything you need to succeed</Text>
+              <Text style={[styles.heroHeadline, styles.heroTextColor]}>
+                Powerful features to streamline your project workflows
+              </Text>
+              
+              <Text style={[styles.heroSubtitle, styles.heroTextColor]}>
+                SiteSnap combines powerful project management tools with intuitive photo 
+                and document handling to keep your team organized and your projects on track.
+              </Text>
 
-          <View style={styles.introButtons}>
-            <TouchableOpacity 
-              style={styles.primaryButton}
-              onPress={() => navigation.navigate('Features')}
-            >
-              <Text style={styles.primaryButtonText}>Explore Features</Text>
-            </TouchableOpacity>
-            <TouchableOpacity 
-              style={styles.secondaryButton}
-              onPress={() => {}}
-            >
-              <Text style={styles.secondaryButtonText}>Book a Demo</Text>
-            </TouchableOpacity>
-          </View>
+              <View style={styles.heroButtons}>
+                <TouchableOpacity 
+                  style={styles.primaryButton}
+                  onPress={() => navigation.navigate('Auth', { screen: 'SignUp' })}
+                >
+                  <Text style={styles.primaryButtonText}>Start Free Trial</Text>
+                </TouchableOpacity>
+                <TouchableOpacity 
+                  style={styles.secondaryButton}
+                  onPress={() => {}}
+                >
+                  <Text style={styles.secondaryButtonText}>Book a Demo</Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+          </LinearGradient>
         </View>
         
         {/* Project & Task Management Category Header */}
@@ -210,7 +579,6 @@ const FeaturesScreen = () => {
           image={placeholderImage}
           imageOnRight={true}
           backgroundColor={COLORS.backgroundAlt}
-          componentPath="src/screens/projects/ProjectDashboard"
         />
         
         {/* 3.1.2 Task Tracking */}
@@ -225,7 +593,6 @@ const FeaturesScreen = () => {
           image={placeholderImage}
           imageOnRight={false}
           backgroundColor={COLORS.background}
-          componentPath="src/screens/tasks/TaskManager"
         />
         
         {/* Document & Photo Management Category */}
@@ -247,7 +614,6 @@ const FeaturesScreen = () => {
           image={placeholderImage}
           imageOnRight={true}
           backgroundColor={COLORS.backgroundAlt}
-          componentPath="src/screens/media/PhotoGrid"
         />
         
         {/* 3.2.2 Document Management */}
@@ -262,7 +628,6 @@ const FeaturesScreen = () => {
           image={placeholderImage}
           imageOnRight={false}
           backgroundColor={COLORS.background}
-          componentPath="src/screens/documents/DocumentList"
         />
         
         {/* Reporting & Analytics Category */}
@@ -284,7 +649,6 @@ const FeaturesScreen = () => {
           image={placeholderImage}
           imageOnRight={true}
           backgroundColor={COLORS.backgroundAlt}
-          componentPath="src/screens/reports/ReportBuilder"
         />
         
         {/* 3.3.2 Data Analysis */}
@@ -299,48 +663,26 @@ const FeaturesScreen = () => {
           image={placeholderImage}
           imageOnRight={false}
           backgroundColor={COLORS.background}
-          componentPath="src/screens/analytics/AnalyticsDashboard"
         />
-        
-        {/* Team Collaboration Category */}
-        <FeatureCategoryHeader 
-          tagText="Collaboration"
-          title="Team Collaboration"
-          description="Enhance team coordination and communication with tools designed for seamless collaboration."
-        />
-        
-        {/* 3.4.1 User Management */}
-        <FeatureSection 
-          title="Seamless User Management"
-          description="Manage your team with ease. Assign roles, set permissions, and organize users into project-specific teams to maintain efficient workflows."
-          bullets={[
-            "Assign roles and permissions easily",
-            "Organize users into project teams",
-            "Control access to sensitive project data"
-          ]}
-          image={placeholderImage}
-          imageOnRight={true}
-          backgroundColor={COLORS.backgroundAlt}
-          componentPath="src/screens/team/TeamManagement"
-        />
-        
-        {/* 3.4.2 Communication Tools */}
-        <FeatureSection 
-          title="Integrated Communication Tools"
-          description="Keep your team connected with built-in communication tools. Chat in real-time, receive notifications, and share files directly within the platform."
-          bullets={[
-            "Real-time chat for project discussions",
-            "In-app notification system for updates",
-            "Share files directly within conversations"
-          ]}
-          image={placeholderImage}
-          imageOnRight={false}
-          backgroundColor={COLORS.background}
-          componentPath="src/screens/communication/ChatSystem"
-        />
-        
-        {/* 4. Integration Section */}
-        <View style={styles.integrationSection}>
+
+        {/* Integration Section */}
+        <Animated.View 
+          ref={useInView({
+            threshold: 0.1,
+            triggerOnce: true,
+            onChange: (inView) => {
+              if (inView) {
+                Animated.timing(new Animated.Value(0), {
+                  toValue: 1,
+                  duration: 1200,
+                  delay: 200,
+                  useNativeDriver: true,
+                }).start();
+              }
+            }
+          }).ref}
+          style={styles.integrationSection}
+        >
           <CategoryTag text="Integrations" />
           <Text style={styles.integrationTitle}>Connect Your Favorite Tools</Text>
           <Text style={styles.integrationDescription}>
@@ -355,25 +697,12 @@ const FeaturesScreen = () => {
             <IntegrationIcon icon="github" name="GitHub" />
             <IntegrationIcon icon="trello" name="Trello" />
           </View>
-        </View>
-        
-        {/* 5. Call-to-Action Section */}
-        <View style={styles.ctaContainer}>
-          <Text style={styles.ctaTitle}>Ready to Streamline Your Projects?</Text>
-          <Text style={styles.ctaDescription}>
-            Join thousands of construction and field service teams who are already saving time and improving project outcomes with SiteSnap.
-          </Text>
-          <View style={styles.ctaButtons}>
-            <TouchableOpacity style={styles.ctaPrimaryButton} onPress={() => navigation.navigate('Auth', { screen: 'SignUp' })}>
-              <Text style={styles.ctaPrimaryButtonText}>Start Free Trial</Text>
-            </TouchableOpacity>
-            <TouchableOpacity style={styles.ctaSecondaryButton} onPress={() => navigation.navigate('Pricing')}>
-              <Text style={styles.ctaSecondaryButtonText}>View Pricing</Text>
-            </TouchableOpacity>
-          </View>
-        </View>
-        
-        {/* 6. Footer */}
+        </Animated.View>
+
+        {/* Final CTA Section */}
+        <FinalCTASection />
+
+        {/* Footer */}
         <Footer />
       </ScrollView>
     </View>
@@ -388,7 +717,104 @@ const styles = StyleSheet.create({
   scrollView: {
     flex: 1,
   },
-  // Introduction Section
+  // Hero Section
+  heroSection: {
+    width: '100%',
+  },
+  heroBackground: {
+    width: '100%',
+  },
+  heroOverlay: {
+    width: '100%',
+  },
+  overlayGradient: {
+    width: '100%',
+  },
+  heroContent: {
+    paddingVertical: 80,
+    paddingHorizontal: 20,
+    alignItems: 'center',
+  },
+  logoContainer: {
+    marginBottom: 30,
+    alignItems: 'center',
+  },
+  featureLogo: {
+    width: 250,
+    height: 120,
+    resizeMode: 'contain',
+  },
+  heroTagline: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: COLORS.primary,
+    textAlign: 'center',
+    marginBottom: 16,
+    textTransform: 'uppercase',
+    letterSpacing: 1,
+  },
+  heroHeadline: {
+    fontSize: Platform.OS === 'web' ? 42 : 32,
+    fontWeight: '800',
+    color: COLORS.textDark,
+    textAlign: 'center',
+    maxWidth: 800,
+    marginBottom: 20,
+    lineHeight: Platform.OS === 'web' ? 52 : 42,
+  },
+  heroSubtitle: {
+    fontSize: 18,
+    color: COLORS.textLight,
+    textAlign: 'center',
+    maxWidth: 800,
+    lineHeight: 28,
+    marginBottom: 40,
+  },
+  heroButtons: {
+    flexDirection: 'row',
+    gap: 16,
+    marginBottom: 60,
+  },
+  heroFeatureCards: {
+    flexDirection: Platform.OS === 'web' ? 'row' : 'column',
+    gap: 20,
+    maxWidth: 1000,
+    width: '100%',
+    justifyContent: 'center',
+    padding: 10,
+  },
+  heroFeatureCard: {
+    backgroundColor: COLORS.white,
+    borderRadius: 8,
+    padding: 24,
+    width: Platform.OS === 'web' ? 300 : '100%',
+    ...CARD_SHADOW,
+    marginBottom: 20,
+  },
+  heroFeatureIconContainer: {
+    width: 50,
+    height: 50,
+    borderRadius: 25,
+    backgroundColor: COLORS.tagBackground,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 16,
+  },
+  heroFeatureTitle: {
+    fontSize: 18,
+    fontWeight: '700',
+    color: COLORS.textDark,
+    marginBottom: 12,
+  },
+  heroFeatureDescription: {
+    fontSize: 14,
+    color: COLORS.textLight,
+    lineHeight: 22,
+  },
+  heroTextColor: {
+    color: COLORS.white, // White text for better contrast on green overlay
+  },
+  // Introduction Section styles (retained but not used in new design)
   introSection: {
     paddingVertical: 48,
     paddingHorizontal: 20,
@@ -482,6 +908,9 @@ const styles = StyleSheet.create({
     width: '100%',
     paddingVertical: 64,
     paddingHorizontal: 20,
+    marginBottom: 20,
+    borderRadius: 8,
+    overflow: 'hidden',
   },
   featureSectionInner: {
     maxWidth: 1200,
@@ -558,21 +987,7 @@ const styles = StyleSheet.create({
     height: 300,
     borderRadius: 8,
     backgroundColor: '#E5E7EB', // Light background for placeholder images
-    // Shadow styles
-    ...Platform.select({
-      ios: {
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.1,
-        shadowRadius: 4,
-      },
-      android: {
-        elevation: 3,
-      },
-      web: {
-        boxShadow: '0px 2px 4px rgba(0, 0, 0, 0.1)',
-      }
-    }),
+    ...CARD_SHADOW
   },
   // Integration Section
   integrationSection: {
@@ -581,6 +996,11 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     backgroundColor: COLORS.background,
     alignItems: 'center',
+    borderRadius: 8,
+    marginHorizontal: 'auto',
+    maxWidth: '95%',
+    marginBottom: 30,
+    ...CARD_SHADOW
   },
   integrationTitle: {
     fontSize: 32,
@@ -614,56 +1034,39 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: COLORS.textLight,
   },
-  // CTA Section
-  ctaContainer: {
-    backgroundColor: COLORS.primary,
+  // Shimmer Effect styles
+  shimmerContainer: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    zIndex: 1,
+    overflow: 'hidden',
+  },
+  raindropShimmer: {
+    position: 'absolute',
+    width: 4,
+    height: 70,
+    top: 0,
+    bottom: 0,
+  },
+  raindropGradient: {
     width: '100%',
-    paddingVertical: 80,
-    paddingHorizontal: 20,
-    alignItems: 'center',
+    height: '100%',
+    borderRadius: 2,
   },
-  ctaTitle: {
-    fontSize: Platform.OS === 'web' ? 36 : 28,
-    fontWeight: '700',
-    color: COLORS.white,
-    textAlign: 'center',
-    marginBottom: 16,
+  raindropSplash: {
+    position: 'absolute',
+    width: 10,
+    height: 10,
+    borderRadius: 5,
+    zIndex: 2,
   },
-  ctaDescription: {
-    fontSize: 16,
-    color: 'rgba(255, 255, 255, 0.9)',
-    maxWidth: 700,
-    textAlign: 'center',
-    marginBottom: 32,
-    lineHeight: 24,
-  },
-  ctaButtons: {
-    flexDirection: 'row',
-    gap: 16,
-  },
-  ctaPrimaryButton: {
-    backgroundColor: COLORS.white,
-    paddingVertical: 12,
-    paddingHorizontal: 24,
-    borderRadius: 4,
-  },
-  ctaPrimaryButtonText: {
-    color: COLORS.primary,
-    fontWeight: '600',
-    fontSize: 16,
-  },
-  ctaSecondaryButton: {
-    backgroundColor: 'transparent',
-    paddingVertical: 12,
-    paddingHorizontal: 24,
-    borderRadius: 4,
-    borderWidth: 1,
-    borderColor: COLORS.white,
-  },
-  ctaSecondaryButtonText: {
-    color: COLORS.white,
-    fontWeight: '600',
-    fontSize: 16,
+  splashGradient: {
+    width: '100%',
+    height: '100%',
+    borderRadius: 5,
   },
 });
 

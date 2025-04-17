@@ -24,7 +24,7 @@ const Header = () => {
       <View style={styles.container}>
         <TouchableOpacity onPress={() => navigation.navigate('Landing')} style={styles.logoContainer}>
           <Image
-            source={require('../../assets/images/siteSnap-logo.svg')}
+            source={require('../../assets/images/logo.png')}
             style={styles.logo}
             resizeMode="contain"
           />
@@ -98,7 +98,7 @@ const Header = () => {
 
 const styles = StyleSheet.create({
   header: {
-    width: '100%',
+    width: '100vw',
     backgroundColor: '#FFFFFF',
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
@@ -110,6 +110,7 @@ const styles = StyleSheet.create({
     top: 0,
     left: 0,
     right: 0,
+    alignItems: 'center',
   },
   container: {
     flexDirection: 'row',
@@ -119,7 +120,6 @@ const styles = StyleSheet.create({
     paddingVertical: 16,
     maxWidth: 1200,
     width: '100%',
-    marginHorizontal: 'auto',
   },
   logoContainer: {
   },

@@ -25,7 +25,8 @@ const LandingScreen = () => {
       <Header />
       <ScrollView 
         style={styles.scrollView} 
-        contentContainerStyle={{ paddingTop: headerHeight }}
+        contentContainerStyle={styles.scrollViewContent}
+        showsVerticalScrollIndicator={false}
       >
         <HeroSection />
         <ProblemSolutionSection />
@@ -34,8 +35,8 @@ const LandingScreen = () => {
         <TestimonialsSection />
         <PricingSection />
         <FinalCTASection />
+        <Footer />
       </ScrollView>
-      <Footer />
     </View>
   );
 };
@@ -44,9 +45,16 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#FFFFFF',
+    width: '100%',
   },
   scrollView: {
     flex: 1,
+    width: '100%',
+  },
+  scrollViewContent: {
+    paddingTop: 80, // Adjusted for header
+    flexGrow: 1,
+    width: '100%',
   },
 });
 

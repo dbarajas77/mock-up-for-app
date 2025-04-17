@@ -7,6 +7,7 @@ import {
   Platform,
   useWindowDimensions,
   ScrollView,
+  Animated as CoreAnimated,
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
@@ -22,11 +23,14 @@ import Animated, {
   Extrapolate,
   useAnimatedScrollHandler,
   withTiming,
+  interpolateColor,
 } from 'react-native-reanimated';
-import { Ionicons } from '@expo/vector-icons';
+import Header from '../../components/LandingPage/Header';
+import Footer from '../../components/LandingPage/Footer';
+import Svg, { Path } from 'react-native-svg';
 
 const COLORS = {
-  primary: '#10B981',
+  primary: '#00BA88',
   primaryDark: '#059669',
   textDark: '#111827',
   textLight: '#6B7280',
@@ -40,7 +44,7 @@ const COLORS = {
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
 
-const AnimatedScrollView = Animated.createAnimatedComponent(ScrollView);
+const AnimatedScrollView = CoreAnimated.createAnimatedComponent(ScrollView);
 
 // Billing Toggle Component
 const BillingToggle = ({ isAnnual, setIsAnnual }) => {
@@ -64,7 +68,7 @@ const BillingToggle = ({ isAnnual, setIsAnnual }) => {
         onPress={onToggle}
         activeOpacity={0.8}
       >
-        <Animated.View style={[styles.toggleThumb, toggleStyle]} />
+        <CoreAnimated.View style={[styles.toggleThumb, toggleStyle]} />
       </TouchableOpacity>
       <Text style={[styles.billingOption, isAnnual && styles.billingOptionActive]}>
         Annual
@@ -91,14 +95,40 @@ const PricingCard = ({ plan, isAnnual, navigation }) => {
   };
 
   const price = isAnnual ? plan.price.annual : plan.price.monthly;
+  const savings = isAnnual && plan.price.monthly ? (plan.price.monthly * 12 - plan.price.annual).toFixed(0) : 0;
+
+  const renderPrice = () => {
+    if (plan.name === 'Enterprise') {
+      return (
+        <View style={styles.priceContainer}>
+          <Text style={styles.enterprisePrice}>Contact Sales</Text>
+        </View>
+      );
+    }
+    return (
+      <View style={styles.priceContainer}>
+        <Text style={styles.currency}>$</Text>
+        <Text style={styles.price}>{price}</Text>
+        <Text style={styles.period}>/{isAnnual ? 'year' : 'month'}</Text>
+        {isAnnual && savings > 0 && (
+          <View style={styles.savingsBadge}>
+            <Text style={styles.savingsText}>Save ${savings}</Text>
+          </View>
+        )}
+      </View>
+    );
+  };
 
   return (
-    <Animated.View 
+    <CoreAnimated.View 
       style={[
         styles.pricingCard,
         plan.recommended && styles.recommendedCard,
         cardStyle,
       ]}
+      onStartShouldSetResponder={() => true}
+      onResponderGrant={onPressIn}
+      onResponderRelease={onPressOut}
     >
       {plan.recommended && (
         <View style={styles.recommendedBadge}>
@@ -106,11 +136,7 @@ const PricingCard = ({ plan, isAnnual, navigation }) => {
         </View>
       )}
       <Text style={styles.planName}>{plan.name}</Text>
-      <View style={styles.priceContainer}>
-        <Text style={styles.currency}>$</Text>
-        <Text style={styles.price}>{price}</Text>
-        <Text style={styles.period}>/{isAnnual ? 'year' : 'month'}</Text>
-      </View>
+      {renderPrice()}
       <View style={styles.featuresContainer}>
         {plan.features.map((feature, index) => (
           <View key={index} style={styles.featureItem}>
@@ -124,18 +150,16 @@ const PricingCard = ({ plan, isAnnual, navigation }) => {
           styles.selectPlanButton,
           plan.recommended && styles.recommendedButton,
         ]}
-        onPressIn={onPressIn}
-        onPressOut={onPressOut}
-        onPress={() => navigation.navigate('Auth', { screen: 'SignUp' })}
+        onPress={() => console.log('Selected plan:', plan.name)}
       >
         <Text style={[
           styles.selectPlanButtonText,
           plan.recommended && styles.recommendedButtonText,
         ]}>
-          {plan.name === 'Enterprise' ? 'Contact Sales' : 'Start Free Trial'}
+          {plan.name === 'Enterprise' ? 'Contact Sales' : plan.trial ? 'Start Free Trial' : 'Get Started'}
         </Text>
       </TouchableOpacity>
-    </Animated.View>
+    </CoreAnimated.View>
   );
 };
 
@@ -174,19 +198,279 @@ const FAQItem = ({ question, answer }) => {
           color={COLORS.primary} 
         />
       </TouchableOpacity>
-      <Animated.View style={[styles.faqContent, animatedStyle]}>
+      <CoreAnimated.View style={[styles.faqContent, animatedStyle]}>
         <Text style={styles.faqAnswer}>{answer}</Text>
-      </Animated.View>
+      </CoreAnimated.View>
     </View>
   );
 };
 
+// <<< START COPIED ShimmerEffect CODE >>>
+const shimmerStyles = StyleSheet.create({
+  shimmerContainer: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    zIndex: 1, // Ensure shimmer is behind header content if needed
+    overflow: 'hidden',
+  },
+  raindropShimmer: {
+    position: 'absolute',
+    width: 4,
+    height: 70,
+    top: 0,
+    bottom: 0,
+  },
+  raindropGradient: {
+    width: '100%',
+    height: '100%',
+    borderRadius: 2,
+  },
+  raindropSplash: {
+    position: 'absolute',
+    width: 10,
+    height: 10,
+    borderRadius: 5,
+    zIndex: 2, // Above raindrop
+  },
+  splashGradient: {
+    width: '100%',
+    height: '100%',
+    borderRadius: 5,
+  },
+});
+
+const ShimmerEffect = () => {
+  const [raindrops, setRaindrops] = useState([]);
+  const screenHeight = useWindowDimensions().height; // Use screen height for raindrop animation
+
+  // Function to create initial raindrop states
+  const createRaindrops = () => {
+    const drops = [];
+    const numDrops = 30; // Adjust number of raindrops
+    for (let i = 0; i < numDrops; i++) {
+      drops.push({
+        id: i,
+        horizontalOffset: Math.random() * 100,
+        height: Math.random() * 50 + 40, // Varying heights
+        width: Math.random() * 2 + 2,   // Varying widths
+        position: new CoreAnimated.Value(- (Math.random() * screenHeight * 0.5 + 50)), // Use CoreAnimated.Value
+        splash: new CoreAnimated.Value(0),
+        splashOpacity: new CoreAnimated.Value(0),
+        delay: Math.random() * 5000, // Random start delay
+        duration: Math.random() * 1500 + 1000, // Random duration
+        landingPoint: screenHeight * (Math.random() * 0.3 + 0.6), // Where splash occurs (lower part)
+      });
+    }
+    setRaindrops(drops);
+    return drops;
+  };
+
+  React.useEffect(() => {
+    const drops = createRaindrops();
+
+    const startRainAnimation = (drop) => {
+      const animateRaindrop = () => {
+        drop.position.setValue(-drop.height); // Reset position above screen
+        drop.splash.setValue(0);
+        drop.splashOpacity.setValue(0);
+
+        CoreAnimated.sequence([ // Use CoreAnimated.sequence
+          CoreAnimated.delay(drop.delay), // Use CoreAnimated.delay
+          CoreAnimated.timing(drop.position, { // Use CoreAnimated.timing
+            toValue: drop.landingPoint,
+            duration: drop.duration,
+            useNativeDriver: true,
+          }),
+          // Splash Animation
+          CoreAnimated.parallel([ // Use CoreAnimated.parallel
+            CoreAnimated.timing(drop.splash, { // Use CoreAnimated.timing
+              toValue: 1,
+              duration: 400, // Splash expansion duration
+              useNativeDriver: true,
+            }),
+            CoreAnimated.timing(drop.splashOpacity, { // Use CoreAnimated.timing
+              toValue: 1,
+              duration: 100, // Quick fade in
+              useNativeDriver: true,
+            }),
+          ]),
+          CoreAnimated.timing(drop.splashOpacity, { // Use CoreAnimated.timing
+            toValue: 0,
+            duration: 300, // Fade out splash
+            delay: 100,
+            useNativeDriver: true,
+          }),
+        ]).start(() => {
+           // Loop the animation after a random delay
+           drop.delay = Math.random() * 3000 + 1000;
+           drop.duration = Math.random() * 1500 + 1000; // Randomize duration for next fall
+           animateRaindrop();
+        });
+      };
+      animateRaindrop();
+    };
+
+    drops.forEach(drop => startRainAnimation(drop));
+
+    // Cleanup function
+    return () => {
+      raindrops.forEach(drop => {
+        if (drop.position) drop.position.stopAnimation();
+        if (drop.splash) drop.splash.stopAnimation();
+        if (drop.splashOpacity) drop.splashOpacity.stopAnimation();
+      });
+    };
+  }, []); // Run only once on mount
+
+  return (
+    <View style={shimmerStyles.shimmerContainer} pointerEvents="none">
+      {raindrops.map((drop) => (
+        <React.Fragment key={drop.id}>
+          {/* Raindrop */}
+          <CoreAnimated.View // Use CoreAnimated.View
+            style={[
+              shimmerStyles.raindropShimmer,
+              {
+                left: `${drop.horizontalOffset}%`,
+                height: drop.height,
+                width: drop.width,
+                transform: [{ translateY: drop.position }],
+              },
+            ]}
+          >
+            <LinearGradient
+              colors={['rgba(255,255,255,0)', 'rgba(255,255,255,0.2)', 'rgba(255,255,255,0.4)', 'rgba(255,255,255,0.2)', 'rgba(255,255,255,0)']}
+              start={{ x: 0.5, y: 0 }}
+              end={{ x: 0.5, y: 1 }}
+              style={shimmerStyles.raindropGradient}
+            />
+          </CoreAnimated.View>
+
+          {/* Splash effect */}
+          <CoreAnimated.View // Use CoreAnimated.View
+            style={[
+              shimmerStyles.raindropSplash,
+              {
+                left: `${drop.horizontalOffset}%`,
+                top: drop.landingPoint,
+                opacity: drop.splashOpacity,
+                transform: [
+                  {
+                    scale: drop.splash.interpolate({
+                      inputRange: [0, 1],
+                      outputRange: [0.5, 2.5], // Splash size animation
+                    }),
+                  },
+                ],
+              },
+            ]}
+          >
+             <LinearGradient
+              colors={['rgba(255,255,255,0.4)', 'rgba(255,255,255,0.1)', 'rgba(255,255,255,0)']}
+              style={shimmerStyles.splashGradient}
+              start={{ x: 0.5, y: 0.5 }}
+              end={{ x: 1, y: 1 }}
+            />
+          </CoreAnimated.View>
+        </React.Fragment>
+      ))}
+    </View>
+  );
+};
+// <<< END COPIED ShimmerEffect CODE >>>
+
 const PricingScreen = () => {
   const navigation = useNavigation<NavigationProp>();
-  const { width } = useWindowDimensions();
+  const { width, height } = useWindowDimensions();
   const scrollY = useSharedValue(0);
   const insets = useSafeAreaInsets();
   const [isAnnual, setIsAnnual] = useState(false);
+
+  // Header height calculation (similar to FeaturesScreen)
+  const headerHeight = 80 + insets.top;
+
+  // Wave animation values
+  const wave1Animation = useSharedValue(0);
+  const wave2Animation = useSharedValue(0);
+  const wave3Animation = useSharedValue(0);
+
+  // Create animated styles for each wave
+  const wave1Style = useAnimatedStyle(() => {
+    // Create a more organic, apple-like curve
+    return {
+      transform: [
+        {translateX: Math.sin(wave1Animation.value * 0.5) * 70 + Math.cos(wave1Animation.value * 1.1) * 30},
+        {translateY: Math.sin(wave1Animation.value * 0.9) * 40 + Math.cos(wave1Animation.value * 0.7) * 20},
+        {skewX: `${Math.sin(wave1Animation.value * 0.6) * 15 + Math.cos(wave1Animation.value * 0.9) * 8}deg`},
+        {skewY: `${Math.sin(wave1Animation.value * 1.0) * 10 + Math.cos(wave1Animation.value * 0.4) * 9}deg`},
+        {scaleX: 1.3 + Math.sin(wave1Animation.value * 0.3) * 0.3 + Math.cos(wave1Animation.value * 0.7) * 0.2},
+        {scaleY: 1.2 + Math.sin(wave1Animation.value * 0.8) * 0.2 + Math.cos(wave1Animation.value * 0.5) * 0.15},
+        {rotate: `${Math.sin(wave1Animation.value * 0.4) * 4 + Math.cos(wave1Animation.value * 0.8) * 3}deg`}
+      ],
+      borderRadius: 300 + Math.sin(wave1Animation.value * 0.7) * 100 + Math.cos(wave1Animation.value * 1.2) * 50,
+      opacity: 0.85 + Math.sin(wave1Animation.value * 0.4) * 0.1,
+    };
+  });
+
+  const wave2Style = useAnimatedStyle(() => {
+    // Create a more organic, orange-like curve
+    return {
+      transform: [
+        {translateX: Math.sin(wave2Animation.value * 0.8 + 1.2) * 80 + Math.cos(wave2Animation.value * 0.5) * 35},
+        {translateY: Math.sin(wave2Animation.value * 0.7 + 0.5) * 50 + Math.cos(wave2Animation.value * 1.0) * 30},
+        {skewX: `${Math.sin(wave2Animation.value * 0.9) * -20 + Math.cos(wave2Animation.value * 0.5) * -10}deg`},
+        {skewY: `${Math.sin(wave2Animation.value * 0.5) * 12 + Math.cos(wave2Animation.value * 0.9) * 11}deg`},
+        {scaleX: 1.4 + Math.sin(wave2Animation.value * 0.6) * 0.35 + Math.cos(wave2Animation.value * 0.3) * 0.25},
+        {scaleY: 1.3 + Math.sin(wave2Animation.value * 0.4) * 0.25 + Math.cos(wave2Animation.value * 0.8) * 0.2},
+        {rotate: `${Math.sin(wave2Animation.value * 0.6) * -6 + Math.cos(wave2Animation.value * 0.7) * -4}deg`}
+      ],
+      borderRadius: 280 + Math.sin(wave2Animation.value * 0.9) * 120 + Math.cos(wave2Animation.value * 0.6) * 60,
+      opacity: 0.9 + Math.sin(wave2Animation.value * 0.5) * 0.08,
+    };
+  });
+
+  const wave3Style = useAnimatedStyle(() => {
+    // Create a more organic, fruit-like curve
+    return {
+      transform: [
+        {translateX: Math.sin(wave3Animation.value * 0.4 + 2.0) * 90 + Math.cos(wave3Animation.value * 0.8) * 40},
+        {translateY: Math.sin(wave3Animation.value * 1.1 + 0.8) * 60 + Math.cos(wave3Animation.value * 0.6) * 35},
+        {skewX: `${Math.sin(wave3Animation.value * 0.7) * 25 + Math.cos(wave3Animation.value * 1.0) * 12}deg`},
+        {skewY: `${Math.sin(wave3Animation.value * 0.9) * -15 + Math.cos(wave3Animation.value * 0.3) * -13}deg`},
+        {scaleX: 1.5 + Math.sin(wave3Animation.value * 0.8) * 0.4 + Math.cos(wave3Animation.value * 0.5) * 0.3},
+        {scaleY: 1.4 + Math.sin(wave3Animation.value * 0.5) * 0.3 + Math.cos(wave3Animation.value * 0.9) * 0.25},
+        {rotate: `${Math.sin(wave3Animation.value * 0.8) * 8 + Math.cos(wave3Animation.value * 0.4) * 5}deg`}
+      ],
+      borderRadius: 260 + Math.sin(wave3Animation.value * 0.6) * 140 + Math.cos(wave3Animation.value * 1.1) * 70,
+      opacity: 1.0 + Math.sin(wave3Animation.value * 0.7) * 0.05,
+    };
+  });
+
+  // Start the wave animations when component mounts
+  React.useEffect(() => {
+    // Create looping animations for each wave at different speeds
+    const loop1 = setInterval(() => {
+      wave1Animation.value = wave1Animation.value + 0.005;
+    }, 16);
+    
+    const loop2 = setInterval(() => {
+      wave2Animation.value = wave2Animation.value + 0.004;
+    }, 16);
+    
+    const loop3 = setInterval(() => {
+      wave3Animation.value = wave3Animation.value + 0.003;
+    }, 16);
+
+    // Clean up intervals on unmount
+    return () => {
+      clearInterval(loop1);
+      clearInterval(loop2);
+      clearInterval(loop3);
+    };
+  }, []);
 
   const scrollHandler = useAnimatedScrollHandler({
     onScroll: (event) => {
@@ -194,67 +478,71 @@ const PricingScreen = () => {
     },
   });
 
-  const headerStyle = useAnimatedStyle(() => {
-    return {
-      opacity: interpolate(
-        scrollY.value,
-        [0, 100],
-        [1, 0.9],
-        Extrapolate.CLAMP
-      ),
-      backgroundColor: COLORS.white,
-    };
-  });
+  const handleWavePress = () => {
+    // Scroll to pricing cards section with a smoother animation
+    if (scrollY && scrollY.value) {
+      scrollY.value = withSpring(300, {
+        damping: 20,
+        stiffness: 90,
+        mass: 1.2,
+        overshootClamping: false,
+      });
+    }
+  };
 
   const pricingPlans = [
     {
-      name: 'Basic',
+      name: 'Free Trial',
       price: {
         monthly: 0,
         annual: 0,
       },
       features: [
-        'Basic project management',
-        'Simple reporting',
-        '1GB storage',
-        '3 projects',
-        '2 users',
+        '14-day full access',
+        'All Pro features included',
+        'No credit card required',
+        'Cancel anytime',
+        'Email support',
       ],
       recommended: false,
+      trial: true,
     },
     {
-      name: 'Pro',
+      name: 'Professional',
       price: {
         monthly: 29,
-        annual: 279,
+        annual: 299,
       },
       features: [
-        'Advanced reporting',
-        'Photo annotations',
-        '10GB storage',
-        'Unlimited projects',
-        '10 users',
+        '$29/month for first user',
+        '$25/month per additional user',
+        'All features included',
         'Priority support',
+        'Unlimited storage',
+        'Advanced reporting',
+        'Custom branding',
       ],
       recommended: true,
+      trial: false,
     },
     {
       name: 'Enterprise',
       price: {
-        monthly: 99,
-        annual: 949,
+        monthly: null,
+        annual: null,
       },
       features: [
-        'Custom reporting',
-        'Advanced annotations',
-        'Unlimited storage',
-        'Unlimited projects',
-        'Unlimited users',
-        'Dedicated support',
+        'Custom pricing',
+        'Dedicated account manager',
         'Custom integrations',
         'SLA guarantee',
+        'On-premise deployment option',
+        'Advanced security features',
+        'Custom training',
+        'Phone support',
       ],
       recommended: false,
+      trial: false,
     },
   ];
 
@@ -283,62 +571,39 @@ const PricingScreen = () => {
 
   return (
     <View style={styles.container}>
-      {/* Header */}
-      <Animated.View style={[styles.header, headerStyle]}>
-        <View style={[styles.headerContent, { paddingTop: insets.top }]}>
-          <TouchableOpacity onPress={() => navigation.navigate('Landing')}>
-            <Text style={styles.logoText}>SiteSnap</Text>
-          </TouchableOpacity>
-          
-          {width > 768 && (
-            <View style={styles.navLinks}>
-              <TouchableOpacity onPress={() => navigation.navigate('Landing')}>
-                <Text style={styles.navLink}>Home</Text>
-              </TouchableOpacity>
-              <TouchableOpacity onPress={() => navigation.navigate('Features')}>
-                <Text style={styles.navLink}>Features</Text>
-              </TouchableOpacity>
-              <TouchableOpacity onPress={() => navigation.navigate('Pricing')}>
-                <Text style={[styles.navLink, styles.activeNavLink]}>Pricing</Text>
-              </TouchableOpacity>
-              <TouchableOpacity onPress={() => navigation.navigate('Resources')}>
-                <Text style={styles.navLink}>Resources</Text>
-              </TouchableOpacity>
-              <TouchableOpacity onPress={() => navigation.navigate('Support')}>
-                <Text style={styles.navLink}>Support</Text>
-              </TouchableOpacity>
-            </View>
-          )}
-
-          <View style={styles.authButtons}>
-            <TouchableOpacity onPress={() => navigation.navigate('Auth', { screen: 'Login' })}>
-              <Text style={styles.loginButton}>Login</Text>
-            </TouchableOpacity>
-            <TouchableOpacity 
-              style={styles.signupButton}
-              onPress={() => navigation.navigate('Auth', { screen: 'SignUp' })}
-            >
-              <Text style={styles.signupButtonText}>Sign Up</Text>
-            </TouchableOpacity>
-          </View>
-        </View>
-      </Animated.View>
+      {/* Render the standard Header */}
+      <Header /> 
 
       <AnimatedScrollView
         style={styles.scrollView}
-        onScroll={scrollHandler}
+        contentContainerStyle={[styles.scrollContentContainer, { paddingTop: headerHeight }]}
         scrollEventThrottle={16}
-        showsVerticalScrollIndicator={false}
+        onScroll={scrollHandler}
       >
-        {/* Hero Section */}
-        <View style={[styles.heroSection, { paddingTop: 100 + insets.top }]}>
-          <Text style={styles.headline}>Simple Pricing for Teams of All Sizes</Text>
-          <Text style={styles.subheadline}>No hidden fees. Cancel anytime.</Text>
-          <BillingToggle isAnnual={isAnnual} setIsAnnual={setIsAnnual} />
+        {/* Hero Content */}
+        <View style={styles.heroContent}>
+          {/* Apply Gradient and Shimmer *inside* heroContent */}
+          <LinearGradient
+            colors={[COLORS.primary, COLORS.primaryDark, '#E0F2F1']} // Gradient similar to Features fallback
+            start={{ x: 0.5, y: 0 }}
+            end={{ x: 0.5, y: 1 }}
+            style={StyleSheet.absoluteFill} // Fill the container
+          />
+          <ShimmerEffect />
+
+          {/* Ensure content is layered on top */}
+          <View style={{ zIndex: 1, alignItems: 'center' }}> 
+            <Text style={styles.heroTitle}>Find the Perfect Plan</Text>
+            <Text style={styles.heroSubtitle}>
+              Choose the plan that best fits your project needs and budget. 
+              Start with a free trial, no credit card required.
+            </Text>
+            <BillingToggle isAnnual={isAnnual} setIsAnnual={setIsAnnual} />
+          </View>
         </View>
 
         {/* Pricing Cards */}
-        <View style={styles.pricingGrid}>
+        <View style={styles.pricingCardsContainer}>
           {pricingPlans.map((plan, index) => (
             <PricingCard 
               key={index} 
@@ -365,7 +630,7 @@ const PricingScreen = () => {
         {/* FAQ Section */}
         <View style={styles.faqSection}>
           <Text style={styles.faqTitle}>Frequently Asked Questions</Text>
-          <View style={styles.faqList}>
+          <View style={styles.faqContainer}>
             {faqs.map((faq, index) => (
               <FAQItem 
                 key={index}
@@ -393,35 +658,8 @@ const PricingScreen = () => {
             </TouchableOpacity>
           </LinearGradient>
         </View>
-
-        {/* Footer */}
-        <View style={styles.footer}>
-          <View style={styles.footerContent}>
-            <View style={styles.footerSection}>
-              <Text style={styles.footerTitle}>Navigation</Text>
-              <TouchableOpacity onPress={() => navigation.navigate('Landing')}>
-                <Text style={styles.footerLink}>Home</Text>
-              </TouchableOpacity>
-              <TouchableOpacity onPress={() => navigation.navigate('Features')}>
-                <Text style={styles.footerLink}>Features</Text>
-              </TouchableOpacity>
-              <TouchableOpacity onPress={() => navigation.navigate('Pricing')}>
-                <Text style={styles.footerLink}>Pricing</Text>
-              </TouchableOpacity>
-            </View>
-            <View style={styles.footerSection}>
-              <Text style={styles.footerTitle}>Social</Text>
-              <View style={styles.socialLinks}>
-                {['twitter', 'linkedin', 'github'].map((platform, index) => (
-                  <TouchableOpacity key={index} style={styles.socialIcon}>
-                    <FontAwesome5 name={platform} size={24} color={COLORS.primary} />
-                  </TouchableOpacity>
-                ))}
-              </View>
-            </View>
-          </View>
-        </View>
       </AnimatedScrollView>
+      <Footer />
     </View>
   );
 };
@@ -431,92 +669,46 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: COLORS.background,
   },
-  header: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    zIndex: 1000,
-    backgroundColor: COLORS.white,
-    borderBottomWidth: 1,
-    borderBottomColor: 'rgba(229, 231, 235, 0.5)',
-  },
-  headerContent: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: 20,
-    paddingVertical: 16,
-  },
-  logoText: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    color: COLORS.primary,
-  },
-  navLinks: {
-    flexDirection: 'row',
-    gap: 32,
-  },
-  navLink: {
-    fontSize: 16,
-    color: COLORS.textDark,
-    fontWeight: '500',
-  },
-  activeNavLink: {
-    color: COLORS.primary,
-  },
-  authButtons: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 16,
-  },
-  loginButton: {
-    fontSize: 16,
-    color: COLORS.textDark,
-    fontWeight: '500',
-  },
-  signupButton: {
-    backgroundColor: COLORS.primary,
-    paddingHorizontal: 20,
-    paddingVertical: 12,
-    borderRadius: 8,
-  },
-  signupButtonText: {
-    color: COLORS.white,
-    fontSize: 16,
-    fontWeight: '600',
-  },
   scrollView: {
     flex: 1,
   },
-  heroSection: {
-    padding: 24,
-    alignItems: 'center',
-    backgroundColor: COLORS.white,
+  scrollContentContainer: {
+    paddingBottom: 100, // Ensure space for footer etc.
   },
-  headline: {
+  heroContent: {
+    paddingTop: 40, // Keep top padding
+    paddingHorizontal: 20,
+    alignItems: 'center',
+    position: 'relative',
+    overflow: 'hidden', // Change from visible to hidden for absoluteFill
+    paddingBottom: 40, // Add reasonable bottom padding
+  },
+  heroTitle: {
     fontSize: Platform.OS === 'web' ? 48 : 36,
     fontWeight: '800',
-    color: COLORS.textDark,
+    color: COLORS.white,
     textAlign: 'center',
     marginBottom: 16,
   },
-  subheadline: {
+  heroSubtitle: {
     fontSize: 18,
-    color: COLORS.textLight,
+    color: COLORS.textDark,
     marginBottom: 40,
+    opacity: 0.8,
   },
   billingToggleContainer: {
     flexDirection: 'row',
+    justifyContent: 'center',
     alignItems: 'center',
-    gap: 16,
+    marginBottom: 32,
+    gap: 12,
   },
   billingOption: {
     fontSize: 16,
-    color: COLORS.textLight,
+    color: '#E0F2F1', // Change text color to be visible on gradient
   },
   billingOptionActive: {
-    color: COLORS.textDark,
+    color: COLORS.white, // Change text color to be visible on gradient
     fontWeight: '600',
   },
   savingsText: {
@@ -533,105 +725,124 @@ const styles = StyleSheet.create({
   toggleThumb: {
     width: 24,
     height: 24,
-    backgroundColor: COLORS.white,
+    backgroundColor: 'rgba(255,255,255,0.8)',
     borderRadius: 12,
   },
-  pricingGrid: {
-    padding: 20,
-    flexDirection: Platform.OS === 'web' ? 'row' : 'column',
-    gap: 24,
+  pricingCardsContainer: {
+    flexDirection: 'row',
     justifyContent: 'center',
-    alignItems: 'center',
+    flexWrap: 'wrap',
+    gap: 20,
+    marginTop: 40,
+    marginBottom: 40,
+    backgroundColor: '#f8f9fa',
+    paddingTop: 40,
+    paddingBottom: 40,
+    paddingHorizontal: 20,
+    borderRadius: 12,
   },
   pricingCard: {
-    backgroundColor: COLORS.white,
-    borderRadius: 12,
-    padding: 32,
-    width: Platform.OS === 'web' ? '30%' : '100%',
-    maxWidth: 400,
-    ...Platform.select({
-      web: {
-        boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)',
-      },
-      default: {
-        elevation: 4,
-      },
-    }),
+    backgroundColor: COLORS.cardBackground,
+    borderRadius: 16,
+    padding: 24,
+    width: 320,
+    minHeight: 520,
+    shadowColor: COLORS.primary,
+    shadowOffset: {
+      width: 6,
+      height: 8,
+    },
+    shadowOpacity: 0.15,
+    shadowRadius: 12,
+    elevation: 8,
+    position: 'relative',
+    borderWidth: 2,
+    borderColor: COLORS.primary,
   },
   recommendedCard: {
-    borderColor: COLORS.primary,
-    borderWidth: 2,
-    transform: [{ scale: 1.05 }],
+    backgroundColor: COLORS.cardBackgroundAlt,
+    transform: [{ scale: 1.02 }],
   },
   recommendedBadge: {
     position: 'absolute',
     top: -12,
     left: '50%',
-    transform: [{ translateX: -50 }],
+    transform: [{ translateX: -60 }],
     backgroundColor: COLORS.primary,
-    paddingHorizontal: 12,
-    paddingVertical: 4,
-    borderRadius: 12,
+    paddingHorizontal: 16,
+    paddingVertical: 6,
+    borderRadius: 20,
+    width: 120,
+    alignItems: 'center',
   },
   recommendedText: {
-    color: COLORS.white,
+    color: '#FFF',
     fontSize: 14,
     fontWeight: '600',
   },
   planName: {
     fontSize: 24,
     fontWeight: '700',
-    color: COLORS.textDark,
+    color: COLORS.text,
     marginBottom: 16,
+    textAlign: 'center',
   },
   priceContainer: {
     flexDirection: 'row',
-    alignItems: 'baseline',
+    justifyContent: 'center',
+    alignItems: 'flex-start',
     marginBottom: 24,
   },
   currency: {
-    fontSize: 24,
-    color: COLORS.textDark,
+    fontSize: 20,
     fontWeight: '600',
+    color: COLORS.text,
+    marginTop: 4,
   },
   price: {
-    fontSize: 48,
-    color: COLORS.textDark,
+    fontSize: 40,
     fontWeight: '800',
+    color: COLORS.text,
   },
   period: {
     fontSize: 16,
-    color: COLORS.textLight,
+    color: COLORS.textSecondary,
+    marginTop: 8,
+    marginLeft: 2,
   },
   featuresContainer: {
-    gap: 16,
-    marginBottom: 32,
+    flex: 1,
+    marginBottom: 24,
   },
   featureItem: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 12,
+    marginBottom: 12,
+    gap: 8,
   },
   featureText: {
-    fontSize: 16,
-    color: COLORS.textDark,
+    fontSize: 15,
+    color: COLORS.text,
+    flex: 1,
   },
   selectPlanButton: {
-    backgroundColor: COLORS.white,
     borderWidth: 2,
-    borderColor: COLORS.primary,
-    paddingVertical: 16,
+    backgroundColor: COLORS.primary,
     borderRadius: 8,
+    paddingVertical: 14,
+    paddingHorizontal: 24,
     alignItems: 'center',
+    justifyContent: 'center',
+    cursor: 'pointer',
   },
   recommendedButton: {
-    backgroundColor: COLORS.primary,
-    borderWidth: 0,
+    backgroundColor: COLORS.primaryDark,
+    borderColor: COLORS.primaryDark,
   },
   selectPlanButtonText: {
+    color: COLORS.white,
     fontSize: 16,
     fontWeight: '600',
-    color: COLORS.primary,
   },
   recommendedButtonText: {
     color: COLORS.white,
@@ -657,17 +868,17 @@ const styles = StyleSheet.create({
     color: COLORS.textLight,
   },
   faqSection: {
-    padding: 40,
+    marginTop: 60,
+    paddingHorizontal: 20,
   },
   faqTitle: {
-    fontSize: 32,
+    fontSize: 28,
     fontWeight: '700',
-    color: COLORS.textDark,
-    marginBottom: 40,
+    color: COLORS.text,
+    marginBottom: 24,
     textAlign: 'center',
   },
-  faqList: {
-    gap: 16,
+  faqContainer: {
     maxWidth: 800,
     alignSelf: 'center',
     width: '100%',
@@ -730,278 +941,95 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: COLORS.primary,
   },
-  footer: {
-    backgroundColor: COLORS.background,
-    padding: 40,
-  },
-  footerContent: {
-    flexDirection: Platform.OS === 'web' ? 'row' : 'column',
-    justifyContent: 'space-between',
-    gap: 40,
-  },
-  footerSection: {
-    flex: 1,
-  },
-  footerTitle: {
-    fontSize: 18,
+  enterprisePrice: {
+    fontSize: 24,
     fontWeight: '700',
-    color: COLORS.textDark,
-    marginBottom: 24,
+    color: COLORS.text,
   },
-  footerLink: {
-    fontSize: 16,
-    color: COLORS.textLight,
-    marginBottom: 16,
+  savingsBadge: {
+    position: 'absolute',
+    top: -20,
+    right: -40,
+    backgroundColor: COLORS.success,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 12,
   },
-  socialLinks: {
-    flexDirection: 'row',
-    gap: 16,
+  savingsText: {
+    color: '#FFF',
+    fontSize: 12,
+    fontWeight: '600',
   },
-  socialIcon: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: COLORS.white,
-    justifyContent: 'center',
-    alignItems: 'center',
+  wavesContainer: {
+    position: 'absolute',
+    bottom: -200,
+    left: 0,
+    right: 0,
+    height: 400,
+    overflow: 'visible',
+    zIndex: 10,
+  },
+  waveBackground: {
+    width: '100%',
+    height: '100%',
+    overflow: 'visible',
+  },
+  svgContainer: {
+    width: '100%',
+    height: '100%',
+    position: 'relative',
+  },
+  waveSVG: {
+    position: 'absolute',
+    width: '240%',
+    height: 240,
+    left: '-70%',
+    opacity: 0.9,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 5 },
+    shadowOpacity: 0.1,
+    shadowRadius: 15,
+    elevation: 10,
+    overflow: 'visible',
+  },
+  waveGradient: {
+    width: '100%',
+    height: '100%',
+    backgroundColor: 'transparent',
+    borderRadius: 500,
     ...Platform.select({
-      web: {
-        boxShadow: '0 2px 4px -1px rgba(0, 0, 0, 0.1)',
+      ios: {
+        overflow: 'hidden',
       },
-      default: {
-        elevation: 2,
+      android: {
+        overflow: 'hidden',
+      },
+      web: {
+        overflow: 'visible',
       },
     }),
   },
-  scrollContent: {
-    flexGrow: 1,
+  wave1: {
+    bottom: 10,
+    height: 220,
+    opacity: 0.85,
+    zIndex: 3,
   },
-  heroSection: {
-    padding: 24,
-    alignItems: 'center',
-    backgroundColor: COLORS.white,
+  wave2: {
+    bottom: 80,
+    height: 240,
+    opacity: 0.9,
+    zIndex: 2,
   },
-  heroTitle: {
-    fontSize: 32,
-    fontWeight: 'bold',
-    color: COLORS.textDark,
-    textAlign: 'center',
-    marginBottom: 16,
+  wave3: {
+    bottom: 150,
+    height: 260,
+    opacity: 1,
+    zIndex: 1,
   },
-  heroSubtitle: {
-    fontSize: 18,
-    color: COLORS.textLight,
-    textAlign: 'center',
-    marginBottom: 32,
-  },
-  pricingSection: {
-    padding: 24,
-  },
-  pricingHeader: {
-    alignItems: 'center',
-    marginBottom: 32,
-  },
-  billingToggle: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: COLORS.backgroundAlt,
-    borderRadius: 24,
-    padding: 4,
-  },
-  toggleButton: {
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    borderRadius: 20,
-  },
-  toggleButtonActive: {
-    backgroundColor: COLORS.primary,
-  },
-  toggleText: {
-    fontSize: 16,
-    color: COLORS.textLight,
-  },
-  toggleTextActive: {
-    color: COLORS.white,
-  },
-  pricingGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    justifyContent: 'center',
-    gap: 24,
-  },
-  pricingCard: {
-    backgroundColor: COLORS.white,
-    borderRadius: 12,
-    padding: 24,
+  touchableContainer: {
     width: '100%',
-    maxWidth: 350,
-    borderWidth: 1,
-    borderColor: COLORS.border,
-  },
-  pricingCardHighlighted: {
-    borderColor: COLORS.primary,
-    borderWidth: 2,
-  },
-  tierName: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    color: COLORS.textDark,
-    marginBottom: 8,
-  },
-  tierDescription: {
-    fontSize: 16,
-    color: COLORS.textLight,
-    marginBottom: 16,
-  },
-  priceContainer: {
-    flexDirection: 'row',
-    alignItems: 'baseline',
-    marginBottom: 24,
-  },
-  currency: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    color: COLORS.textDark,
-  },
-  price: {
-    fontSize: 48,
-    fontWeight: 'bold',
-    color: COLORS.textDark,
-  },
-  period: {
-    fontSize: 16,
-    color: COLORS.textLight,
-    marginLeft: 4,
-  },
-  featureList: {
-    marginBottom: 24,
-  },
-  featureItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 12,
-  },
-  featureText: {
-    fontSize: 16,
-    color: COLORS.textDark,
-    marginLeft: 12,
-  },
-  selectButton: {
-    backgroundColor: COLORS.primary,
-    borderRadius: 8,
-    padding: 16,
-    alignItems: 'center',
-  },
-  selectButtonText: {
-    color: COLORS.white,
-    fontSize: 16,
-    fontWeight: 'bold',
-  },
-  trustSection: {
-    padding: 24,
-    backgroundColor: COLORS.white,
-  },
-  trustTitle: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    color: COLORS.textDark,
-    textAlign: 'center',
-    marginBottom: 24,
-  },
-  trustGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    justifyContent: 'center',
-    gap: 16,
-  },
-  trustItem: {
-    alignItems: 'center',
-    width: '100%',
-    maxWidth: 200,
-  },
-  trustIcon: {
-    marginBottom: 12,
-  },
-  trustItemTitle: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    color: COLORS.textDark,
-    marginBottom: 8,
-    textAlign: 'center',
-  },
-  trustItemDescription: {
-    fontSize: 14,
-    color: COLORS.textLight,
-    textAlign: 'center',
-  },
-  faqSection: {
-    padding: 24,
-  },
-  faqTitle: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    color: COLORS.textDark,
-    textAlign: 'center',
-    marginBottom: 24,
-  },
-  faqItem: {
-    marginBottom: 16,
-  },
-  faqQuestion: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    padding: 16,
-    backgroundColor: COLORS.white,
-    borderRadius: 8,
-    borderWidth: 1,
-    borderColor: COLORS.border,
-  },
-  faqQuestionText: {
-    fontSize: 16,
-    fontWeight: 'bold',
-    color: COLORS.textDark,
-    flex: 1,
-  },
-  faqAnswer: {
-    padding: 16,
-    backgroundColor: COLORS.backgroundAlt,
-    borderBottomLeftRadius: 8,
-    borderBottomRightRadius: 8,
-  },
-  faqAnswerText: {
-    fontSize: 16,
-    color: COLORS.textLight,
-  },
-  ctaSection: {
-    padding: 24,
-    backgroundColor: COLORS.primary,
-  },
-  ctaTitle: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    color: COLORS.white,
-    textAlign: 'center',
-    marginBottom: 16,
-  },
-  ctaSubtitle: {
-    fontSize: 16,
-    color: COLORS.white,
-    textAlign: 'center',
-    marginBottom: 24,
-    opacity: 0.8,
-  },
-  ctaButton: {
-    backgroundColor: COLORS.white,
-    borderRadius: 8,
-    padding: 16,
-    alignItems: 'center',
-    alignSelf: 'center',
-  },
-  ctaButtonText: {
-    color: COLORS.primary,
-    fontSize: 16,
-    fontWeight: 'bold',
+    height: '100%',
   },
 });
 

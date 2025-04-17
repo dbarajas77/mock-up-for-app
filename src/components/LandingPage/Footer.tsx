@@ -1,7 +1,8 @@
 import React from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Image, useWindowDimensions, Platform } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
-import { FontAwesome } from '@expo/vector-icons'; // For social icons
+import { FontAwesome, MaterialIcons } from '@expo/vector-icons'; // For social icons and MaterialIcons for camera
+import { PageWrapper } from './index';
 
 const Footer = () => {
   const navigation = useNavigation();
@@ -10,17 +11,19 @@ const Footer = () => {
   const currentYear = new Date().getFullYear();
   
   return (
-    <View style={styles.footer}>
+    <PageWrapper backgroundColor="#111827">
       <View style={styles.contentContainer}>
         {/* Footer Top: Logo + Nav Columns */}
         <View style={[styles.footerTop, isDesktop && styles.footerTopDesktop]}>
           {/* Logo Area */}
           <View style={[styles.logoContainer, isDesktop && styles.logoContainerDesktop]}>
-            <Image 
-              source={require('../../assets/images/siteSnap-logo.svg')} 
-              style={styles.logo}
-              resizeMode="contain"
-            />
+            <View style={styles.textLogoContainer}>
+              <View style={styles.cameraIconContainer}>
+                <MaterialIcons name="photo-camera" size={28} color="#10B981" />
+              </View>
+              <Text style={styles.textLogoWhite}>Site</Text>
+              <Text style={styles.textLogoGreen}>Snap</Text>
+            </View>
             <Text style={styles.tagline}>Project Documentation Made Simple</Text>
           </View>
           
@@ -101,20 +104,14 @@ const Footer = () => {
           </View>
         </View>
       </View>
-    </View>
+    </PageWrapper>
   );
 };
 
 const styles = StyleSheet.create({
-  footer: {
-    width: '100%',
-    backgroundColor: '#111827', // Dark background
+  contentContainer: {
     paddingVertical: 64,
     paddingHorizontal: 20,
-  },
-  contentContainer: {
-    maxWidth: 1200,
-    marginHorizontal: 'auto',
     width: '100%',
   },
   // Footer Top Styles
@@ -133,10 +130,19 @@ const styles = StyleSheet.create({
     maxWidth: 280, // Max width for logo area
     marginRight: 32, // Space before nav columns
   },
-  logo: {
-    width: 140,
-    height: 48,
+  textLogoContainer: {
+    flexDirection: 'row',
     marginBottom: 12,
+  },
+  textLogoWhite: {
+    fontSize: 24,
+    fontWeight: 'bold',
+    color: '#FFFFFF',
+  },
+  textLogoGreen: {
+    fontSize: 24,
+    fontWeight: 'bold',
+    color: '#10B981',
   },
   tagline: {
     fontSize: 14,
@@ -215,6 +221,9 @@ const styles = StyleSheet.create({
     // Style for the touchable area if needed
     padding: 8, // Add padding for easier touch
     marginHorizontal: 4, // Adjust spacing
+  },
+  cameraIconContainer: {
+    marginRight: 8,
   },
 });
 
